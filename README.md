@@ -11,4 +11,4 @@ The code can be compiled by cmake as the necessary files ([CMakeLists.txt](CMake
 The user has to modify the content of [CMake.config](CMake.config) to his/her own configuration.
 
 Hereunder an example of a supercritical flow inside a converging channel:
-![supercritical flow inside a converging channel](https://github.com/xavierdechamps/Nozzle_MOC_supersonic/blob/master/Images/Characteristics_velocity_thetae0.jpg)
+![supercritical flow inside a converging channel](https://github.com/xavierdechamps/Shallow_water_FV/blob/main/Doc/pics/supercritical_symmetrical_contraction_2Dsol.png)
