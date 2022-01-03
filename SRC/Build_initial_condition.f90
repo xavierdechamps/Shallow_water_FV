@@ -53,7 +53,7 @@ SUBROUTINE write_initial_condition_gmsh()
 !             = 5:   cylindrical dam break
 !             = 6:   oblique hydraulic jump
 !             = 7:   channel with bump
-    test_case = 7
+    test_case = 6
         
     open(unit=10,file=file_gmsh,status="replace",iostat=ierr,form='formatted')
     write(10,'(T1,A11)') "$MeshFormat"
@@ -107,19 +107,12 @@ SUBROUTINE write_initial_condition_gmsh()
             arrayout(i) = 1.0d0
             
          case (7) ! channel with bump
-!            arrayout(i) = 2.d0
             
             xMax = maxval(node(:,1) )
             xMin = minval(node(:,1) )
-            hleft = 3.4d0
-! slope 0.1%
-!            slope = 0.001
-
-            ! center of cell
-!            xe =  (node(elem(i,1),1)+node(elem(i,2),1)+node(elem(i,3),1) ) /3.d0
-!            arrayout(i) = 0.33d0
+            hleft = 4.543260901d0 ! normal depth for b1=40, Q=500, S0=0.002, n=0.0389
+            ! hleft = 2.5160369d0 ! critical depth for b1=40, Q=500
             
-!            arrayout(i) = hleft - slope*(xe-xMin)
             arrayout(i) = hleft
             
          case default
@@ -168,7 +161,7 @@ SUBROUTINE write_initial_condition_gmsh()
 !            V = 0.d0
 
          ! Channel with slope U = q / h
-            U = 4.d0 / 3.4d0
+            U = 500.d0 / ( 40d0 * 4.543260901d0 )
             V = 0.d0
             
          case default
@@ -206,7 +199,7 @@ SUBROUTINE write_initial_condition_gmsh()
 ! Linear slope
     xMax = maxval(node(:,1) )
     xMin = minval(node(:,1) )
-    hleft = 2.0d0
+    hleft = 0.0d0
 !    slope = 0.05664 ! = Dy / Dx
     slope = 0.002d0 ! = Dy / Dx
             
@@ -297,8 +290,8 @@ SUBROUTINE write_initial_condition_gmsh()
           ! ENDIF
           
           ! Linear slope
-          h_inlet = 3.4d0
-          h_outlet = 3.4d0
+          h_inlet = 4.543260901d0
+          h_outlet = 2.5160369d0
           
 !          h_inlet = 0.18d0
 !          h_outlet = 0.33d0
@@ -379,7 +372,7 @@ SUBROUTINE write_initial_condition_gmsh()
           
           
           ! Channel with slope U = q / h
-          u_inlet = 4.d0 / 3.4d0
+          u_inlet = 500.d0 / ( 40d0 * 4.543260901d0 )
           v_inlet = 0.d0
           
 !          u_inlet = 0.18d0 / 0.33d0
