@@ -53,7 +53,7 @@ SUBROUTINE write_initial_condition_gmsh()
 !             = 5:   cylindrical dam break
 !             = 6:   oblique hydraulic jump
 !             = 7:   channel with bump
-    test_case = 6
+    test_case = 7
         
     open(unit=10,file=file_gmsh,status="replace",iostat=ierr,form='formatted')
     write(10,'(T1,A11)') "$MeshFormat"
