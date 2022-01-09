@@ -1,16 +1,15 @@
 
-plat1 = 5;
-hsortie = 10;
+bottom = 5;
+hexit = 10;
 angle = 10*Pi/180;
 
-//x_montee = montee*Cos(angle);
-x_montee = 15;
+x_ramp = 15;
 Point(1) = {0, 0, 0};
-Point(2) = {plat1, 0, 0};
-Point(3) = {plat1+x_montee, x_montee*Tan(angle), 0};
-Point(4) = {plat1+x_montee, hsortie, 0};
-Point(5) = {0, hsortie, 0};
-Point(6) = {plat1, hsortie, 0};
+Point(2) = {bottom, 0, 0};
+Point(3) = {bottom+x_ramp, x_ramp*Tan(angle), 0};
+Point(4) = {bottom+x_ramp, hexit, 0};
+Point(5) = {0, hexit, 0};
+Point(6) = {bottom, hexit, 0};
 
 Line(1) = {1,2};
 Line(2) = {2, 3};

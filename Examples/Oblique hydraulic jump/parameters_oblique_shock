@@ -1,17 +1,17 @@
-oblique_jump_uni_init.msh                : name of mesh file
+oblique_jump_uni_init.msh                     : name of mesh file
 3                             : number of boundary types, the next 3 lines
 22                            : Inlet, physical tag in gmsh
 21                            : Outlet, physical tag in gmsh
 20                            : Wall, physical tag in gmsh
-oblique_jump_uni_sol.msh                : name of the output, gmsh format
-oblique_jump_uni_sol.dat                : name of the output, dat format
-oblique_jump_uni_sol.dat                : name of the restart file, dat format
-2000                             : total number of temporal steps
-200                             : statistics are printed every X steps
-500                             : solution is saved every X steps
-9.81                           : g : the gravity constant
+oblique_jump_uni_sol.msh                 : name of the output, gmsh format
+oblique_jump_uni_sol.dat                 : name of the output, dat format
+oblique_jump_uni_sol.dat                 : name of the restart file, dat format
+600                          : total number of temporal steps
+200                           : statistics are printed every X steps
+100                           : solution is saved every X steps
+9.81                          : g : the gravity constant
 0.0                           : Manning roughness coefficient
 1                             : [1] steady or [0] unsteady flow
 2.4                           : CFL number (used only for steady flows)
-0.0001                          : time step [s] (used only for unsteady flows)
+0.001                         : time step [s] (used only for unsteady flows)
 0                             : restart from previous simulation [0] no or [1] yes
