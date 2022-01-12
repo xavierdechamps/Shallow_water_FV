@@ -75,8 +75,11 @@ SUBROUTINE write_initial_condition_gmsh()
     arrayout = 0.d00
     
     DO i=1,nbrElem
-        hleft = 4.543260901d0 ! normal depth for b1=40, Q=500, S0=0.002, n=0.0389
-        arrayout(i) = hleft         
+        IF (elem(i,4).eq.22) THEN
+		   arrayout(i) = 5.0d0
+        ELSEIF (elem(i,4).eq.23) THEN
+           arrayout(i) = 10.0d0
+        ENDIF
     ENDDO
     
     write(10,'(T1,I9,ES24.16E2)') (i+nbrFront, arrayout(i),i=1,nbrElem)
@@ -95,8 +98,8 @@ SUBROUTINE write_initial_condition_gmsh()
     
     do i=1,nbrElem
 	! U = q / h = Q / (B * h)
-        U = 500.d0 / ( 40d0 * 4.543260901d0 )
-        V = 0.d0    
+        U = 0.d0
+        V = 0.d0
         write(10,'(T1,I9,2ES24.16E2,F4.1)') i+nbrFront, U, V, 0.
     end do
     
@@ -113,14 +116,7 @@ SUBROUTINE write_initial_condition_gmsh()
     write(10,'(T1,A1)') "1"
     write(10,'(T1,I9)') nbrElem
     
-    xMin = minval(node(:,1) )
-    hleft = 0.0d0
-    slope = 0.002d0 ! = Dy / Dx
-	DO i=1,nbrElem
-      xe =  (node(elem(i,1),1)+node(elem(i,2),1)+node(elem(i,3),1) ) /3.d0
-      ! Linear slope
-      arrayout(i) = hleft - slope*(xe-xMin)
-    ENDDO
+    arrayout = 0.d0
 	
     write(10,'(T1,I9,ES24.16E2)') (i+nbrFront, arrayout(i),i=1,nbrElem)
     write(10,'(T1,A15)') "$EndElementData"
@@ -137,18 +133,8 @@ SUBROUTINE write_initial_condition_gmsh()
     write(10,'(T1,I9)') nbrFront
     
     do i=1,nbrFront
-        h_inlet = 4.543260901d0 ! normal depth
-		h_outlet = 2.5160369d0 ! critical depth
-        IF ( front(i,3).eq.1 ) THEN
-        ! Inlet 
-            write(10,'(T1,I9,2X,ES24.16E2)') i, h_inlet
-        ELSE IF ( front(i,3).eq.2 ) THEN
-        ! Outlet 
-            write(10,'(T1,I9,2X,ES24.16E2)') i, h_outlet
-        ELSE
-            write(10,'(T1,I9,2X,ES24.16E2)') i, 0.
-        ENDIF
-    
+        h_inlet = 0.d0
+        write(10,'(T1,I9,2X,ES24.16E2)') i, h_inlet    
     end do
     
     write(10,'(T1,A15)') "$EndElementData"
@@ -165,16 +151,9 @@ SUBROUTINE write_initial_condition_gmsh()
     write(10,'(T1,I9)') nbrFront
     
     do i=1,nbrFront
-	! U = q / h = Q / (B * h)
-        u_inlet = 500.d0 / ( 40d0 * 4.543260901d0 )
-        v_inlet = 0.d0
-        IF ( front(i,3).eq.1 ) THEN
-        ! Inlet 
-            write(10,'(T1,I9,1X,2ES24.16E2,F4.1)') i, u_inlet, v_inlet, 0.
-        ELSE
-            write(10,'(T1,I9,1X,3F4.1)') i, 0. , 0. , 0.
-        ENDIF
-    
+	   u_inlet = 0.d0
+       v_inlet = 0.d0
+       write(10,'(T1,I9,1X,2ES24.16E2,F4.1)') i, u_inlet, v_inlet, 0.
     end do
     
     write(10,'(T1,A15)') "$EndElementData"
