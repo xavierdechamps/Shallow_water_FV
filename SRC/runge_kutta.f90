@@ -36,8 +36,7 @@ SUBROUTINE runge_kutta
 !    beta = (/6.,3.,3.,6./)
     count = 0
     
-    ALLOCATE(dt(nbvar*nbrElem))
-    ALLOCATE(Source(nbvar*nbrElem)) ; Source = zero
+    Source = zero
     
     WRITE(*,*) "Begin of time integration"
     

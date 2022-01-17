@@ -2,7 +2,9 @@
 ! SUBROUTINE mem_allocate
 ! 
 !##########################################################
-SUBROUTINE mem_allocate(node,front,elem,U0,depth,BoundCond,lengU0,nbrNodes,nbrElem,nbrFront)
+SUBROUTINE mem_allocate(node,front,elem,U0,depth,BoundCond,dt,Source,&
+&                       edges,fnormal,geom_data,cell_data_n,edges_ind,fnormal_ind,&
+&                       lengU0,nbrNodes,nbrElem,nbrFront,nbrInt)
     USE module_shallow, only : kr,ki,nbvar
     IMPLICIT NONE
 
@@ -18,8 +20,21 @@ SUBROUTINE mem_allocate(node,front,elem,U0,depth,BoundCond,lengU0,nbrNodes,nbrEl
     INTEGER(ki), ALLOCATABLE    :: elem(:,:)
     INTEGER(ki), ALLOCATABLE    :: front(:,:)
     
-    INTEGER(ki), INTENT(IN) :: lengU0,nbrNodes,nbrElem,nbrFront
+    REAL(kr), ALLOCATABLE :: Source(:)
+    REAL(kr), ALLOCATABLE :: dt(:)
     
+    REAL(kr), ALLOCATABLE :: edges(:,:)       
+    REAL(kr), ALLOCATABLE :: fnormal(:,:)     
+    REAL(kr), ALLOCATABLE :: geom_data(:,:)   
+    REAL(kr), ALLOCATABLE :: cell_data_n(:,:) 
+    INTEGER(ki), ALLOCATABLE :: edges_ind(:,:)  
+    INTEGER(ki), ALLOCATABLE :: fnormal_ind(:,:)
+    
+    INTEGER(ki), INTENT(IN) :: lengU0,nbrNodes,nbrElem,nbrFront,nbrInt
+    
+    WRITE(*,*) "Allocating the memory..."
+    
+    ! Requested in read_gmsh
     ALLOCATE(node(1:nbrNodes,1:2))
     ALLOCATE(front(1:nbrFront,1:4))
     ALLOCATE(elem(1:nbrElem,1:4))
@@ -27,4 +42,68 @@ SUBROUTINE mem_allocate(node,front,elem,U0,depth,BoundCond,lengU0,nbrNodes,nbrEl
     ALLOCATE(depth(1:nbrElem))
     ALLOCATE(BoundCond(1:nbrFront,1:3))
     
+    ! Requested in runge_kutta
+    ALLOCATE(dt(nbvar*nbrElem))
+    ALLOCATE(Source(nbvar*nbrElem))
+    
+    ! Requested in get_normal_to_cell
+    ALLOCATE(geom_data(1:nbrElem,1:4))
+    ALLOCATE(fnormal(1:nbrFront,1:4))
+    ALLOCATE(fnormal_ind(1:nbrFront,1:4))
+    ALLOCATE(cell_data_n(1:nbrElem,1:6))
+    ALLOCATE(edges(1:nbrInt,1:6))
+    ALLOCATE(edges_ind(1:nbrInt,1:2))
+    
 END SUBROUTINE mem_allocate
+
+!##########################################################
+! SUBROUTINE mem_deallocate
+! 
+!##########################################################
+SUBROUTINE mem_deallocate(node,front,elem,U0,depth,BoundCond,dt,Source,&
+&                       edges,fnormal,geom_data,cell_data_n,edges_ind,fnormal_ind)
+    USE module_shallow, only : kr,ki
+    IMPLICIT NONE
+
+!   WARNING !!!!!!!!!!!!
+! If you change the input/output parameters of this routine
+! you also have to change them in the interface 
+!      module_shallow.f90 / module_mem_allocate
+
+    REAL(kr), ALLOCATABLE    :: U0(:)
+    REAL(kr), ALLOCATABLE    :: node(:,:)
+    REAL(kr), ALLOCATABLE    :: depth(:)
+    REAL(kr), ALLOCATABLE    :: BoundCond(:,:)
+    INTEGER(ki), ALLOCATABLE    :: elem(:,:)
+    INTEGER(ki), ALLOCATABLE    :: front(:,:)
+    
+    REAL(kr), ALLOCATABLE :: Source(:)
+    REAL(kr), ALLOCATABLE :: dt(:)
+    
+    REAL(kr), ALLOCATABLE :: edges(:,:)       
+    REAL(kr), ALLOCATABLE :: fnormal(:,:)     
+    REAL(kr), ALLOCATABLE :: geom_data(:,:)   
+    REAL(kr), ALLOCATABLE :: cell_data_n(:,:) 
+    INTEGER(ki), ALLOCATABLE :: edges_ind(:,:)  
+    INTEGER(ki), ALLOCATABLE :: fnormal_ind(:,:)
+        
+    WRITE(*,*) "Deallocating the memory..."
+    
+    IF (ALLOCATED(node))  DEALLOCATE(node)
+    IF (ALLOCATED(front)) DEALLOCATE(front)
+    IF (ALLOCATED(elem))  DEALLOCATE(elem)
+    IF (ALLOCATED(U0))    DEALLOCATE(U0)
+    IF (ALLOCATED(depth)) DEALLOCATE(depth)
+    IF (ALLOCATED(BoundCond)) DEALLOCATE(BoundCond)
+    
+    IF (ALLOCATED(Source)) DEALLOCATE(Source)
+    IF (ALLOCATED(dt))     DEALLOCATE(dt)
+    
+    IF (ALLOCATED(geom_data))   DEALLOCATE(geom_data)
+    IF (ALLOCATED(fnormal))     DEALLOCATE(fnormal)
+    IF (ALLOCATED(fnormal_ind)) DEALLOCATE(fnormal_ind)
+    IF (ALLOCATED(cell_data_n)) DEALLOCATE(cell_data_n)
+    IF (ALLOCATED(edges))       DEALLOCATE(edges)
+    IF (ALLOCATED(edges_ind))   DEALLOCATE(edges_ind)
+    
+END SUBROUTINE mem_deallocate

@@ -29,8 +29,10 @@ PROGRAM GET_RELATIVE_ERROR_THEORY
     endif
     
     ! Allocate the memory for the arrays
-    CALL mem_allocate(node,front,elem,U0,depth,BoundCond,nbvar*nbrElem,nbrNodes,nbrElem,nbrFront)
-    
+    CALL mem_allocate(node,front,elem,U0,depth,BoundCond,dt,Source,&
+&                     edges,fnormal,geom_data,cell_data_n,edges_ind,fnormal_ind,&
+&                     nbvar*nbrElem,nbrNodes,nbrElem,nbrFront,nbrInt)
+
     ! Read the mesh and the initial solution / boundary conditions
     CALL read_gmsh(U0,nbvar*nbrElem,mesh_file,length_names,node,elem,front,depth,BoundCond,nbrNodes,nbrElem,nbrFront,ok)
     
@@ -52,6 +54,10 @@ PROGRAM GET_RELATIVE_ERROR_THEORY
       ENDIF
       
     ENDIF
+    
+    ! Deallocate the memory for the arrays
+    CALL mem_deallocate(node,front,elem,U0,depth,BoundCond,dt,Source,&
+&                       edges,fnormal,geom_data,cell_data_n,edges_ind,fnormal_ind)
     
 200 CONTINUE
     WRITE(*,*) "End of the program"

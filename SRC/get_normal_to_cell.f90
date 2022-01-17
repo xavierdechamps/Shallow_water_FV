@@ -20,14 +20,10 @@ SUBROUTINE get_normal_to_cell
 
     CALL sampletime(time_begin)
 
-    ALLOCATE(geom_data(1:nbrElem,1:4))
     ALLOCATE(cell_data(1:nbrElem,1:8))
     ALLOCATE(cell_data_ind(1:nbrElem,1:3)) ! IDs of the 3 2D elements surrounding each 2D element
-    ALLOCATE(fnormal(1:nbrFront,1:4))
-    ALLOCATE(fnormal_ind(1:nbrFront,1:4))
     ALLOCATE(internal(1:3*nbrElem,1:6))
     ALLOCATE(internal_ind(1:3*nbrElem,1:2))
-    ALLOCATE(cell_data_n(1:nbrElem,1:6))
     ALLOCATE(cell_node_ids(1:nbrElem,1:3,1:2))
     !
     !     a_______________c
@@ -211,9 +207,6 @@ SUBROUTINE get_normal_to_cell
 
       END DO
     END DO
-
-    ALLOCATE(edges(1:edgeId,1:6))
-    ALLOCATE(edges_ind(1:edgeId,1:2))
     
     ! edges(:,1:2) XY components of normal to edge
     ! edges(:,3:4) XY components of center of edge

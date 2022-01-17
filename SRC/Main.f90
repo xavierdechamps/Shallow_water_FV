@@ -36,8 +36,10 @@ PROGRAM MAIN
     endif
     
     ! Allocate the memory for the arrays
-    CALL mem_allocate(node,front,elem,U0,depth,BoundCond,nbvar*nbrElem,nbrNodes,nbrElem,nbrFront)
-    
+    CALL mem_allocate(node,front,elem,U0,depth,BoundCond,dt,Source,&
+&                     edges,fnormal,geom_data,cell_data_n,edges_ind,fnormal_ind,&
+&                     nbvar*nbrElem,nbrNodes,nbrElem,nbrFront,nbrInt)
+
     ! Read the mesh and the initial solution / boundary conditions
     CALL read_gmsh(U0,nbvar*nbrElem,mesh_file,length_names,node,elem,front,depth,BoundCond,nbrNodes,nbrElem,nbrFront,ok)
     IF (ok == 0) THEN
@@ -61,20 +63,11 @@ PROGRAM MAIN
       CALL runge_kutta
 
     ENDIF
-
-    IF (ALLOCATED(node)) DEALLOCATE(node)
-    IF (ALLOCATED(U0)) DEALLOCATE(U0)
-    IF (ALLOCATED(geom_data)) DEALLOCATE(geom_data)
-    IF (ALLOCATED(fnormal)) DEALLOCATE(fnormal)
-    IF (ALLOCATED(cell_data_n)) DEALLOCATE(cell_data_n)
-    IF (ALLOCATED(front)) DEALLOCATE(front)
-    IF (ALLOCATED(elem)) DEALLOCATE(elem)
-    IF (ALLOCATED(dt)) DEALLOCATE(dt)
-    IF (ALLOCATED(dt)) DEALLOCATE(depth)
-    IF (ALLOCATED(fnormal_ind)) DEALLOCATE(fnormal_ind)
-    IF (ALLOCATED(BoundCond)) DEALLOCATE(BoundCond)
-    IF (ALLOCATED(Source)) DEALLOCATE(Source)
-
+    
+    ! Deallocate the memory for the arrays
+    CALL mem_deallocate(node,front,elem,U0,depth,BoundCond,dt,Source,&
+&                       edges,fnormal,geom_data,cell_data_n,edges_ind,fnormal_ind)
+    
 200 CONTINUE
     WRITE(*,*) "End of the simulation"
 

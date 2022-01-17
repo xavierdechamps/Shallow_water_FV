@@ -43,9 +43,14 @@ MODULE module_shallow
 END MODULE module_shallow
 
 MODULE module_mem_allocate
-  interface 
+  INTERFACE 
   
-  SUBROUTINE mem_allocate(node,front,elem,U0,depth,BoundCond,lengU0,nbrNodes,nbrElem,nbrFront)
+! -----------------------
+! Subroutine mem_allocate
+! -----------------------
+  SUBROUTINE mem_allocate(node,front,elem,U0,depth,BoundCond,dt,Source,&
+&                         edges,fnormal,geom_data,cell_data_n,edges_ind,fnormal_ind,&
+&                         lengU0,nbrNodes,nbrElem,nbrFront,nbrInt)
     USE module_shallow, only : kr,ki,nbvar
     IMPLICIT NONE
 
@@ -56,10 +61,47 @@ MODULE module_mem_allocate
     INTEGER(ki), ALLOCATABLE    :: elem(:,:)
     INTEGER(ki), ALLOCATABLE    :: front(:,:)
     
-    INTEGER(ki), INTENT(IN) :: lengU0,nbrNodes,nbrElem,nbrFront
+    REAL(kr), ALLOCATABLE :: Source(:)
+    REAL(kr), ALLOCATABLE :: dt(:)
+    
+    REAL(kr), ALLOCATABLE :: edges(:,:)       
+    REAL(kr), ALLOCATABLE :: fnormal(:,:)     
+    REAL(kr), ALLOCATABLE :: geom_data(:,:)   
+    REAL(kr), ALLOCATABLE :: cell_data_n(:,:) 
+    INTEGER(ki), ALLOCATABLE :: edges_ind(:,:)  
+    INTEGER(ki), ALLOCATABLE :: fnormal_ind(:,:)
+    
+    INTEGER(ki), INTENT(IN) :: lengU0,nbrNodes,nbrElem,nbrFront,nbrInt
         
   END SUBROUTINE mem_allocate
   
-  end interface 
+! -------------------------
+! Subroutine mem_deallocate
+! -------------------------
+  SUBROUTINE mem_deallocate(node,front,elem,U0,depth,BoundCond,dt,Source,&
+&                       edges,fnormal,geom_data,cell_data_n,edges_ind,fnormal_ind)
+    USE module_shallow, only : kr,ki
+    IMPLICIT NONE
+
+    REAL(kr), ALLOCATABLE    :: U0(:)
+    REAL(kr), ALLOCATABLE    :: node(:,:)
+    REAL(kr), ALLOCATABLE    :: depth(:)
+    REAL(kr), ALLOCATABLE    :: BoundCond(:,:)
+    INTEGER(ki), ALLOCATABLE    :: elem(:,:)
+    INTEGER(ki), ALLOCATABLE    :: front(:,:)
+    
+    REAL(kr), ALLOCATABLE :: Source(:)
+    REAL(kr), ALLOCATABLE :: dt(:)
+    
+    REAL(kr), ALLOCATABLE :: edges(:,:)       
+    REAL(kr), ALLOCATABLE :: fnormal(:,:)     
+    REAL(kr), ALLOCATABLE :: geom_data(:,:)   
+    REAL(kr), ALLOCATABLE :: cell_data_n(:,:) 
+    INTEGER(ki), ALLOCATABLE :: edges_ind(:,:)  
+    INTEGER(ki), ALLOCATABLE :: fnormal_ind(:,:)
+        
+  END SUBROUTINE mem_deallocate
+  
+  END INTERFACE 
   
 END MODULE module_mem_allocate
