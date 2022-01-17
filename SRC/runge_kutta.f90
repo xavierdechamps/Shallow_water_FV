@@ -14,8 +14,8 @@ SUBROUTINE runge_kutta
     ! Local parameters
     INTEGER(ki) :: i, k, count, ok
     REAL(kr), DIMENSION(nbvar*nbrElem) :: Urk, Uc, H
-    REAL(kr), DIMENSION(4) :: beta
-    REAL(kr), DIMENSION(3) :: alpha
+!    REAL(kr), DIMENSION(4) :: beta
+!    REAL(kr), DIMENSION(3) :: alpha
     REAL(kr), ALLOCATABLE  :: error(:,:)
     CHARACTER(20) :: char
     
@@ -32,22 +32,22 @@ SUBROUTINE runge_kutta
 
     CALL sampletime(time_begin)
 
-    alpha = (/0.5,0.5,1./)
-    beta = (/6.,3.,3.,6./)
+!    alpha = (/0.5,0.5,1./)
+!    beta = (/6.,3.,3.,6./)
     count = 0
     
     ALLOCATE(dt(nbvar*nbrElem))
-    ALLOCATE(Source(nbvar*nbrElem)) ; Source = 0.0d00
+    ALLOCATE(Source(nbvar*nbrElem)) ; Source = zero
     
-    WRITE(*,*) "Begin of Runge-Kutta iterations - 4th order explicit time scheme"
+    WRITE(*,*) "Begin of time integration"
     
     ! Write the initial solution
-    CALL write_gmsh(0,0)
-    CALL write_solution(ok)
+    CALL write_gmsh(U0,nbvar*nbrElem,file_gmsh,length_names,node,elem,front,nbrNodes,nbrElem,nbrFront,0,0)
+    CALL write_solution(U0,nbvar*nbrElem,file_dat,length_names,ok)
     IF (ok == 0) GOTO 200
 
     IF (.not.ALLOCATED(error)) THEN
-        ALLOCATE( error( nTime ,4 ) ); error = 0.0d00
+        ALLOCATE( error( nTime ,4 ) ); error = zero
     END IF
 
     DO i=1,nTime ! Start the temporal loop
@@ -126,8 +126,8 @@ SUBROUTINE runge_kutta
        count = count + 1
        IF (mod(count,savenTime)==0) THEN
           WRITE(*,*) "Writing the solution in .msh and .dat format"
-          CALL write_gmsh(i,count)
-          CALL write_solution(ok)
+          CALL write_gmsh(U0,nbvar*nbrElem,file_gmsh,length_names,node,elem,front,nbrNodes,nbrElem,nbrFront,i,count)
+          CALL write_solution(U0,nbvar*nbrElem,file_dat,length_names,ok)
           IF (ok == 0) EXIT
        END IF
 

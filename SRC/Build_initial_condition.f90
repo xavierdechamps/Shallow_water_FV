@@ -1,5 +1,6 @@
 PROGRAM BUILD_INITIAL_SOLUTION
     USE module_shallow
+    USE module_mem_allocate
     IMPLICIT NONE
     
     INTEGER(ki) :: ok
@@ -22,12 +23,23 @@ PROGRAM BUILD_INITIAL_SOLUTION
     ENDIF
     CALL get_command_argument(2,file_gmsh)
     
-    CALL read_gmsh(ok)
+    ! Browse the mesh to get the size of the arrays
+    CALL browse_gmsh(mesh_file,length_names,nbrNodes,nbrElem,nbrFront,ok)
+    IF (ok == 0) THEN
+      WRITE(*,*) "The program hasn't started because of a problem during the browsing of the mesh"
+      GOTO 200
+    endif
+    
+    ! Allocate the memory for the arrays
+    CALL mem_allocate(node,front,elem,U0,depth,BoundCond,nbvar*nbrElem,nbrNodes,nbrElem,nbrFront)
+    
+    ! Read the mesh and the initial solution / boundary conditions
+    CALL read_gmsh(U0,nbvar*nbrElem,mesh_file,length_names,node,elem,front,depth,BoundCond,nbrNodes,nbrElem,nbrFront,ok)
+    
     IF (ok == 0) THEN
       WRITE(*,*) "The program hasn't started because of a problem during the reading of the mesh"
       GOTO 200
     ELSE
-!      CALL get_normal_to_cell()
       CALL write_initial_condition_gmsh()
     ENDIF
     
@@ -44,7 +56,7 @@ SUBROUTINE write_initial_condition_gmsh()
     integer(ki) :: ierr, i, wall_type, edge_id
     real(kr) :: h, hleft,hright, u, v, h_inlet, u_inlet, v_inlet, h_outlet
     real(kr) :: xMax,xMin,xCenter,circleRadius, circleShiftY, x1, x2, xe
-    real(kr) :: slope
+    real(kr) :: slope, Q, Fr_i, h_i, g, yMax, u_i
     real(kr) :: arrayout(1:nbrElem)
             
     open(unit=10,file=file_gmsh,status="replace",iostat=ierr,form='formatted')
@@ -71,18 +83,16 @@ SUBROUTINE write_initial_condition_gmsh()
     write(10,'(T1,I9)') 0
     write(10,'(T1,A1)') "1"
     write(10,'(T1,I9)') nbrElem
-    
-    arrayout = 0.d00
-    
-    DO i=1,nbrElem
-        IF (elem(i,4).eq.22) THEN
-		   arrayout(i) = 5.0d0
-        ELSEIF (elem(i,4).eq.23) THEN
-           arrayout(i) = 10.0d0
-        ENDIF
-    ENDDO
-    
-    write(10,'(T1,I9,ES24.16E2)') (i+nbrFront, arrayout(i),i=1,nbrElem)
+	
+    ! Q0 = 2.5 or 5. L/s
+	Q = 5.0d0 / 1000.0d0
+	Fr_i = 4.15d0
+	g = 9.81d0
+	yMax = maxval(node(:,2) )
+	
+    h_i = ( Q*Q / (yMax*yMax*Fr_i*Fr_i*g) )**(1.d0/3.d0)
+        
+    write(10,'(T1,I9,ES24.16E2)') (i+nbrFront, h_i,i=1,nbrElem)
     write(10,'(T1,A15)') "$EndElementData"
     
     !************************************* INITIAL VELOCITY
@@ -96,12 +106,10 @@ SUBROUTINE write_initial_condition_gmsh()
     write(10,'(T1,A1)') "3"
     write(10,'(T1,I9)') nbrElem
     
-    do i=1,nbrElem
-	! U = q / h = Q / (B * h)
-        U = 0.d0
-        V = 0.d0
-        write(10,'(T1,I9,2ES24.16E2,F4.1)') i+nbrFront, U, V, 0.
-    end do
+	u_i = Q / ( yMax * h_i )
+    U = u_i
+    V = 0.d0
+    write(10,'(T1,I9,2ES24.16E2,F4.1)') (i+nbrFront, U, V, 0.,i=1,nbrElem)
     
     write(10,'(T1,A15)') "$EndElementData"
 
@@ -116,7 +124,20 @@ SUBROUTINE write_initial_condition_gmsh()
     write(10,'(T1,A1)') "1"
     write(10,'(T1,I9)') nbrElem
     
-    arrayout = 0.d0
+	! Linear slope
+    xMax = maxval(node(:,1) )
+    xMin = minval(node(:,1) )
+    hleft = 0.0d0
+    slope = 0.000d0 ! = Dy / Dx
+            
+    DO i=1,nbrElem
+      
+      xe =  (node(elem(i,1),1)+node(elem(i,2),1)+node(elem(i,3),1) ) /3.d0
+      
+      ! Linear slope
+      arrayout(i) = hleft - slope*(xe-xMin)
+      
+    ENDDO
 	
     write(10,'(T1,I9,ES24.16E2)') (i+nbrFront, arrayout(i),i=1,nbrElem)
     write(10,'(T1,A15)') "$EndElementData"
@@ -133,8 +154,13 @@ SUBROUTINE write_initial_condition_gmsh()
     write(10,'(T1,I9)') nbrFront
     
     do i=1,nbrFront
-        h_inlet = 0.d0
-        write(10,'(T1,I9,2X,ES24.16E2)') i, h_inlet    
+        h_inlet = h_i
+        IF ( front(i,3).eq.1 .or.front(i,3).eq.2) THEN
+        ! Inlet 
+            write(10,'(T1,I9,2X,ES24.16E2)') i, h_inlet
+        ELSE
+            write(10,'(T1,I9,2X,ES24.16E2)') i, 0.
+        ENDIF
     end do
     
     write(10,'(T1,A15)') "$EndElementData"
@@ -151,9 +177,14 @@ SUBROUTINE write_initial_condition_gmsh()
     write(10,'(T1,I9)') nbrFront
     
     do i=1,nbrFront
-	   u_inlet = 0.d0
+	   u_inlet = u_i
        v_inlet = 0.d0
-       write(10,'(T1,I9,1X,2ES24.16E2,F4.1)') i, u_inlet, v_inlet, 0.
+       IF ( front(i,3).eq.1 ) THEN
+        ! Inlet 
+            write(10,'(T1,I9,1X,2ES24.16E2,F4.1)') i, u_inlet, v_inlet, 0.
+        ELSE
+            write(10,'(T1,I9,1X,3F4.1)') i, 0. , 0. , 0.
+        ENDIF
     end do
     
     write(10,'(T1,A15)') "$EndElementData"

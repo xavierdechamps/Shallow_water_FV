@@ -10,6 +10,7 @@ MODULE module_shallow
     INTEGER, PARAMETER    :: ki = 4
     
     INTEGER(ki), PARAMETER:: nbvar = 3
+    REAL(kr), PARAMETER   :: zero = 0.0d00
     
     REAL(kr), ALLOCATABLE :: node(:,:) ! Node coordinates
     REAL(kr), ALLOCATABLE :: U0(:)     ! Solution ( ... h hu hv ...)
@@ -27,7 +28,8 @@ MODULE module_shallow
     INTEGER(ki), ALLOCATABLE :: edges_ind(:,:)  ! see get_normal_to_cell
     INTEGER(ki), ALLOCATABLE :: fnormal_ind(:,:)! see get_normal_to_cell
     
-    CHARACTER(LEN=40) :: mesh_file, file_restart, file_gmsh, file_dat
+    INTEGER(ki), PARAMETER :: length_names = 40
+    CHARACTER(LEN=length_names) :: mesh_file, file_restart, file_gmsh, file_dat
     
     INTEGER(ki) :: nbrNodes, nbrElem, nbrFront, nbrInt, nbrBC
     INTEGER(ki) :: nTime, shownTime, savenTime
@@ -39,3 +41,25 @@ MODULE module_shallow
     REAL(kr)  :: CFL, ggrav, deltaTfixed, eps, manning
     
 END MODULE module_shallow
+
+MODULE module_mem_allocate
+  interface 
+  
+  SUBROUTINE mem_allocate(node,front,elem,U0,depth,BoundCond,lengU0,nbrNodes,nbrElem,nbrFront)
+    USE module_shallow, only : kr,ki,nbvar
+    IMPLICIT NONE
+
+    REAL(kr), ALLOCATABLE    :: U0(:)
+    REAL(kr), ALLOCATABLE    :: node(:,:)
+    REAL(kr), ALLOCATABLE    :: depth(:)
+    REAL(kr), ALLOCATABLE    :: BoundCond(:,:)
+    INTEGER(ki), ALLOCATABLE    :: elem(:,:)
+    INTEGER(ki), ALLOCATABLE    :: front(:,:)
+    
+    INTEGER(ki), INTENT(IN) :: lengU0,nbrNodes,nbrElem,nbrFront
+        
+  END SUBROUTINE mem_allocate
+  
+  end interface 
+  
+END MODULE module_mem_allocate

@@ -1,5 +1,6 @@
 PROGRAM GET_RELATIVE_ERROR_THEORY
     USE module_shallow
+    USE module_mem_allocate
     IMPLICIT NONE
     
     INTEGER(ki) :: ok
@@ -20,12 +21,24 @@ PROGRAM GET_RELATIVE_ERROR_THEORY
       GOTO 200
     ENDIF
     
-    CALL read_gmsh(ok)
+    ! Browse the mesh to get the size of the arrays
+    CALL browse_gmsh(mesh_file,length_names,nbrNodes,nbrElem,nbrFront,ok)
+    IF (ok == 0) THEN
+      WRITE(*,*) "The program hasn't started because of a problem during the browsing of the mesh"
+      GOTO 200
+    endif
+    
+    ! Allocate the memory for the arrays
+    CALL mem_allocate(node,front,elem,U0,depth,BoundCond,nbvar*nbrElem,nbrNodes,nbrElem,nbrFront)
+    
+    ! Read the mesh and the initial solution / boundary conditions
+    CALL read_gmsh(U0,nbvar*nbrElem,mesh_file,length_names,node,elem,front,depth,BoundCond,nbrNodes,nbrElem,nbrFront,ok)
+    
     IF (ok == 0) THEN
       WRITE(*,*) "The program hasn't started because of a problem during the reading of the mesh"
       GOTO 200
     ELSE
-      CALL read_solution(ok)
+      CALL read_solution(U0,nbvar*nbrElem,file_restart,length_names,ok)
       IF (ok == 0) THEN
         WRITE(*,*) "The program hasn't started because of a problem during the reading of the mesh"
         GOTO 200
@@ -57,7 +70,6 @@ SUBROUTINE relative_error(ok)
     REAL(kr)    :: x1,x2,x3,x,y1,y2,y3,y,yjump
     REAL(kr)    :: relerru,relerru1,relerru2
     REAL(kr)    :: relerrh,relerrh1,relerrh2
-    REAL(kr)    :: zero = 0.0d00
     REAL(kr)    :: deg_2_rad = 3.1415926535898d00 / 180.0d00
     
     

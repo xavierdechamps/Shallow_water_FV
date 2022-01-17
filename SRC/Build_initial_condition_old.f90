@@ -1,5 +1,6 @@
 PROGRAM BUILD_INITIAL_SOLUTION
     USE module_shallow
+    USE module_mem_allocate
     IMPLICIT NONE
     
     INTEGER(ki) :: ok
@@ -22,7 +23,19 @@ PROGRAM BUILD_INITIAL_SOLUTION
     ENDIF
     CALL get_command_argument(2,file_gmsh)
     
-    CALL read_gmsh(ok)
+    ! Browse the mesh to get the size of the arrays
+    CALL browse_gmsh(mesh_file,length_names,nbrNodes,nbrElem,nbrFront,ok)
+    IF (ok == 0) THEN
+      WRITE(*,*) "The program hasn't started because of a problem during the browsing of the mesh"
+      GOTO 200
+    endif
+    
+    ! Allocate the memory for the arrays
+    CALL mem_allocate(node,front,elem,U0,depth,BoundCond,nbvar*nbrElem,nbrNodes,nbrElem,nbrFront)
+    
+    ! Read the mesh and the initial solution / boundary conditions
+    CALL read_gmsh(U0,nbvar*nbrElem,mesh_file,length_names,node,elem,front,depth,BoundCond,nbrNodes,nbrElem,nbrFront,ok)
+    
     IF (ok == 0) THEN
       WRITE(*,*) "The program hasn't started because of a problem during the reading of the mesh"
       GOTO 200

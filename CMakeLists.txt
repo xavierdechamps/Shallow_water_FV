@@ -58,6 +58,7 @@ add_executable ( shallow
 				      ${SRC_dir}/Main.f90
 				      ${SRC_dir}/runge_kutta.f90
 				      ${SRC_dir}/handling_parameters.f90
+				      ${SRC_dir}/mem_allocate.f90
 			)
 add_dependencies( shallow libmodules)
 set_target_properties ( shallow PROPERTIES LINKER_LANGUAGE Fortran)
@@ -67,7 +68,7 @@ add_executable ( build_initial_solution
 				      ${SRC_dir}/Build_initial_condition.f90
 				      ${SRC_dir}/gmsh_operations.f90
 				      ${SRC_dir}/find_elem.f90
-#				      ${SRC_dir}/get_normal_to_cell.f90
+				      ${SRC_dir}/mem_allocate.f90
 				      ${SRC_dir}/handling_parameters.f90
 			)
 add_dependencies( build_initial_solution libmodules)
@@ -78,7 +79,7 @@ add_executable ( get_relative_error_theory
 				      ${SRC_dir}/Get_relative_error_theory.f90
 				      ${SRC_dir}/gmsh_operations.f90
 				      ${SRC_dir}/find_elem.f90
-#				      ${SRC_dir}/get_normal_to_cell.f90
+				      ${SRC_dir}/mem_allocate.f90
 				      ${SRC_dir}/handling_parameters.f90
 			)
 add_dependencies( get_relative_error_theory libmodules)

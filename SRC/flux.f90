@@ -18,7 +18,6 @@ SUBROUTINE flux(Hvec,SourceDepth, Q)
     REAL(kr), DIMENSION(1:2) :: n
     REAL(kr) :: ds, SL, SR, h, u, v, c, Froude, dij, Hi, Hj
     INTEGER(ki) :: i, idL, idR, error
-    REAL(kr) :: zero = 0.0d00
 
     Hvec = zero
     SourceDepth = zero
@@ -262,7 +261,6 @@ SUBROUTINE upwind_term(q,Qmat,sourceMat,n)
     
     ! Local parameters
     REAL(kr) :: one = 1.0d00
-    REAL(kr) :: zero = 0.0d00
     REAL(kr), DIMENSION(1:nbvar,1:nbvar) :: X, Xm1, abslambda,invlambda,identity, temp, temp2
     REAL(kr) :: h, u, v, c,lambda1, lambda2, lambda3
     

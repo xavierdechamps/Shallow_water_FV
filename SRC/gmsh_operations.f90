@@ -3,12 +3,15 @@
 ! SUBROUTINE write_solution
 !  Goal: write the restart solution in the dat file
 !##########################################################
-SUBROUTINE write_solution(ok)
-    USE MODULE_SHALLOW
+SUBROUTINE write_solution(U0,lengU0,file_dat,lengch,ok)
+    USE MODULE_SHALLOW, only : kr,ki
     IMPLICIT NONE
 
     ! Subroutine parameters
     INTEGER(ki), INTENT(OUT) :: ok
+    INTEGER(ki), INTENT(IN)  :: lengU0,lengch
+    REAL(kr), INTENT(IN)     :: U0(lengU0)
+    CHARACTER(LEN=lengch), INTENT(IN) :: file_dat
     
     ! Local parameters
     INTEGER(ki) :: i, ierr
@@ -20,7 +23,7 @@ SUBROUTINE write_solution(ok)
       ok = 0
     END IF
 
-    WRITE(20,'(ES15.7E3)') (U0(i),i=1,nbrElem*nbvar)
+    WRITE(20,'(ES15.7E3)') (U0(i),i=1,lengU0)
 
     CLOSE(UNIT=20)
 
@@ -30,19 +33,22 @@ END SUBROUTINE write_solution
 ! SUBROUTINE read_solution
 !  Goal: read the restart solution in the dat file
 !##########################################################
-SUBROUTINE read_solution(ok)
-    USE MODULE_SHALLOW
+SUBROUTINE read_solution(U0,lengU0,file_restart,lengch,ok)
+    USE MODULE_SHALLOW, only : kr,ki,zero
     IMPLICIT NONE
 
     ! Subroutine parameters
-    INTEGER(ki), INTENT(OUT) :: ok
+    INTEGER(ki), INTENT(OUT):: ok
+    INTEGER(ki), INTENT(IN) :: lengU0,lengch
+    REAL(kr), INTENT(OUT)   :: U0(lengU0)
+    CHARACTER(LEN=lengch), INTENT(IN) :: file_restart
     
     ! Local parameters
     INTEGER(ki) :: i, ierr, count
     REAL(kr) :: a
 
     ok = 1
-    U0 = 0
+    U0 = zero
     OPEN(UNIT=20,FILE=file_restart,STATUS="old",IOSTAT=ierr,FORM='formatted')
     IF (ierr .NE. 0) THEN
       WRITE(*,*) "Error occuring : file '",trim(file_restart),"' not found "
@@ -58,14 +64,14 @@ SUBROUTINE read_solution(ok)
        IF (ierr .LT. 0) EXIT
     END DO
 
-    IF (count .EQ. nbvar*nbrElem) THEN
+    IF (count .EQ. lengU0) THEN
        REWIND(20)
        READ(20,*) (U0(i), i=1,count)
     ELSE
        ok = 0
        WRITE(*,*) "Error occuring during the reading of the former solution : wrong vector length"
        WRITE(*,*) "Length of the data in the restart file: ",count
-       WRITE(*,*) "Expected length of the data in the restart file: ",nbvar*nbrElem
+       WRITE(*,*) "Expected length of the data in the restart file: ",lengU0
     END IF
     CLOSE(UNIT=20)
     
@@ -76,12 +82,18 @@ END SUBROUTINE read_solution
 !SUBROUTINE write_gmsh
 !  Goal: write the solution in the Gmsh .msh format
 !##########################################################
-SUBROUTINE write_gmsh(k,count)
-    USE MODULE_SHALLOW
+SUBROUTINE write_gmsh(U0,lengU0,file_gmsh,lengch,node,elem,front,nbrNodes,nbrElem,nbrFront,k,count)
+    USE MODULE_SHALLOW, only : kr,ki,ggrav,nbvar,eps
     IMPLICIT NONE
 
     ! Subroutine parameters
-    INTEGER(ki), INTENT(IN) :: k, count
+    INTEGER(ki), INTENT(IN) :: k, count, nbrNodes,nbrElem,nbrFront
+    INTEGER(ki), INTENT(IN) :: lengU0,lengch
+    REAL(kr), INTENT(IN)    :: U0(lengU0)
+    REAL(kr), INTENT(IN)    :: node(nbrNodes,2)
+    INTEGER(ki), INTENT(IN)    :: elem(nbrElem,4)
+    INTEGER(ki), INTENT(IN)    :: front(nbrFront,4)
+    CHARACTER(LEN=lengch), INTENT(IN) :: file_gmsh
     
     ! Local parameters
     INTEGER(ki) :: ierr, i, fin
@@ -102,7 +114,7 @@ SUBROUTINE write_gmsh(k,count)
        WRITE(10,'(T1,A9)') "$EndNodes"
        WRITE(10,'(T1,A9)') "$Elements"
        WRITE(10,'(T1,I9)') nbrElem+nbrFront
-       WRITE(10,'(T1,I9,2I2,I9,I2,2I9)') (i,1,2,front(i,3),1,front(i,1:2),i=1,nbrFront)    
+       WRITE(10,'(T1,I9,2I2,I9,I2,2I9)') (i,1,2,front(i,3),1,front(i,1:2),i=1,nbrFront)
        WRITE(10,'(T1,I9,2I2,I9,I2,3I9)') (i+nbrFront,2,2,elem(i,4),1,elem(i,1:3),i=1,nbrElem)
        WRITE(10,'(T1,A12)') "$EndElements"
     ELSE
@@ -180,12 +192,21 @@ END SUBROUTINE write_gmsh
 ! SUBROUTINE read_gmsh
 !  Goal: read the mesh and the initial solution in the Gmsh .msh format
 !##########################################################
-SUBROUTINE read_gmsh(ok)
-    USE MODULE_SHALLOW
+SUBROUTINE read_gmsh(U0,lengU0,mesh_file,lengch,node,elem,front,depth,BoundCond,nbrNodes,nbrElem,nbrFront,ok)
+    USE MODULE_SHALLOW, only : kr,ki,nbvar,time_begin, time_end
     IMPLICIT NONE
 
     ! Subroutine parameters
     INTEGER(ki), INTENT(OUT) :: ok
+    INTEGER(ki), INTENT(IN) :: nbrNodes,nbrElem,nbrFront
+    INTEGER(ki), INTENT(IN) :: lengU0,lengch
+    REAL(kr), INTENT(OUT)    :: U0(lengU0)
+    REAL(kr), INTENT(OUT)    :: node(nbrNodes,2)
+    REAL(kr), INTENT(OUT)    :: depth(nbrElem)
+    REAL(kr), INTENT(OUT)    :: BoundCond(nbrFront,3)
+    INTEGER(ki), INTENT(OUT)    :: elem(nbrElem,4)
+    INTEGER(ki), INTENT(OUT)    :: front(nbrFront,4)
+    CHARACTER(LEN=lengch), INTENT(IN) :: mesh_file
 
     ! Local parameters
     CHARACTER(len=256)    :: line
@@ -210,7 +231,7 @@ SUBROUTINE read_gmsh(ok)
     END IF
 
     READ(10,*) line, header, b, c
-
+    
     IF (header .LT. 2.) THEN
       WRITE(*,*) "Error : wrong format for gmsh data"
       ok = 0
@@ -225,14 +246,12 @@ SUBROUTINE read_gmsh(ok)
       READ(10,*) line
     END DO
 
-    READ(10,*) nbrNodes
-    WRITE(*,101) nbrNodes
-
-    ALLOCATE(node(1:nbrNodes,1:2))
+    READ(10,*) a
 
     DO i=1,nbrNodes ! Read the node coordinates
       READ(10,*) a, node(i,1), node(i,2), tmp
     END DO
+    WRITE(*,101) nbrNodes
     
     istep = 3
 
@@ -240,48 +259,28 @@ SUBROUTINE read_gmsh(ok)
       READ(10,*) line
     END DO
 
-    READ(10,*) nbrElemTot
-    READ(10,*) a,i
-    DO WHILE (i/=2) ! First loop to calculate the number of edges+nodes
-      IF (i==1) THEN
-        nbrFront = nbrFront + 1
-      ELSE IF (i==15) THEN
-        nbrNodeEdge = nbrNodeEdge + 1
-      END IF
-      READ(10,*) a,i
-    END DO
-    nbrElem = nbrElemTot - nbrFront - nbrNodeEdge
-
-    WRITE(*,102) nbrFront
-    WRITE(*,103) nbrElem
-    
-    ALLOCATE(front(1:nbrFront,1:4))
-    ALLOCATE(elem(1:nbrElem,1:4))
-    ALLOCATE(U0(1:nbvar*nbrElem))
-    ALLOCATE(depth(1:nbrElem))
-    
+    READ(10,*) a
+        
     ! front (:,1:2) : node IDs composing the boundary edge
     ! front (:,3)   : physical tag of the boundary edge
     ! front (:,4)   : ID of the 2D element linked to the boundary edge
     
     ! elem(:,1:3)   : node IDs composing the 2D element
     ! elem(:,4)     : physical tag of the 2D element
-        
-    DO i=1,nbrFront+1
-      BACKSPACE(10)
-    END DO
-
+    
     IF (header2) THEN  ! Read the boundary edges
        READ(10,*) (a,a,a,front(i,3),a,a,front(i,1),front(i,2),i=1,nbrFront)
     ELSE
        READ(10,*) (a,a,a,front(i,3),a,front(i,1),front(i,2),i=1,nbrFront)
     END IF
-
+    WRITE(*,102) nbrFront
+    
     IF (header2) THEN  ! Read the 2D elements
        READ(10,*) (a,a,a,elem(i,4),a,a,elem(i,1),elem(i,2),elem(i,3),i=1,nbrElem)
     ELSE
        READ(10,*) (a,a,a,elem(i,4),a,elem(i,1),elem(i,2),elem(i,3),i=1,nbrElem)
     END IF
+    WRITE(*,103) nbrElem
 
     DO i=1,nbrFront
        CALL find_elem_front(i,front(i,4))
@@ -378,7 +377,6 @@ SUBROUTINE read_gmsh(ok)
       ok = 0
       GOTO 100
     ENDIF
-    ALLOCATE(BoundCond(1:nbrFront,1:3))
     READ(10,*,END=100) (a,BoundCond(i,1),i=1,nbrFront)
         
     ! Boundary condition - velocity
@@ -412,3 +410,80 @@ SUBROUTINE read_gmsh(ok)
     CLOSE(UNIT=10)
     
 END SUBROUTINE read_gmsh
+
+
+!##########################################################
+! SUBROUTINE read_gmsh
+!  Goal: read the mesh and the initial solution in the Gmsh .msh format
+!##########################################################
+SUBROUTINE browse_gmsh(mesh_file,lengch,nbrNodes,nbrElem,nbrFront,ok)
+    USE MODULE_SHALLOW, only : ki,kr
+    IMPLICIT NONE
+    
+    ! Subroutine parameters
+    INTEGER(ki), INTENT(OUT) :: ok
+    INTEGER(ki), INTENT(OUT) :: nbrNodes,nbrElem,nbrFront
+    INTEGER(ki), INTENT(IN)  :: lengch
+    CHARACTER(LEN=lengch), INTENT(IN) :: mesh_file
+
+    ! Local parameters
+    CHARACTER(len=256)    :: line
+    INTEGER(ki) :: i, ierr, a, b, c, nbrElemTot=0,nbrNodeEdge=0
+    INTEGER(ki) :: istep
+    REAL(kr) :: header,tmp
+    LOGICAL :: header2 = .true.
+    EXTERNAL :: find_elem_front, time_display
+
+    ok = 1
+    istep = 1
+    nbrNodes = 0
+    nbrElem = 0
+    nbrFront = 0
+    
+    OPEN(UNIT=10,FILE=mesh_file,STATUS="old",IOSTAT=ierr,FORM='formatted')
+    IF (ierr .NE. 0) THEN
+      WRITE(*,*) "Error occuring : file '",TRIM(mesh_file),"' not found "
+      ok = 0
+      GOTO 100
+    END IF
+
+    READ(10,*) line, header, b, c
+    
+    IF (header .LT. 2.) THEN
+      WRITE(*,*) "Error : wrong format for gmsh data"
+      ok = 0
+      GOTO 100
+    END IF
+
+    IF (header .GT. 2.1) header2 = .false.
+    
+    istep = 2
+    
+    DO WHILE (line .NE. "$Nodes")
+      READ(10,*) line
+    END DO
+
+    READ(10,*) nbrNodes
+    
+    DO WHILE (line .NE. "$Elements")
+      READ(10,*) line
+    END DO
+
+    READ(10,*) nbrElemTot
+    READ(10,*) a,i
+    
+    DO WHILE (i/=2) ! First loop to calculate the number of edges+nodes
+      IF (i==1) THEN
+        nbrFront = nbrFront + 1
+      ELSE IF (i==15) THEN
+        nbrNodeEdge = nbrNodeEdge + 1
+      END IF
+      READ(10,*) a,i
+    END DO
+    
+    nbrElem = nbrElemTot - nbrFront - nbrNodeEdge
+
+100 CLOSE(UNIT=10)
+    
+END SUBROUTINE browse_gmsh
+    
