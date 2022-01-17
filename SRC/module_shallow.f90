@@ -50,7 +50,7 @@ MODULE module_mem_allocate
 ! -----------------------
   SUBROUTINE mem_allocate(node,front,elem,U0,depth,BoundCond,dt,Source,&
 &                         edges,fnormal,geom_data,cell_data_n,edges_ind,fnormal_ind,&
-&                         lengU0,nbrNodes,nbrElem,nbrFront,nbrInt)
+&                         lengU0,nbrNodes,nbrElem,nbrFront,nbrInt,only_mesh)
     USE module_shallow, only : kr,ki,nbvar
     IMPLICIT NONE
 
@@ -71,7 +71,7 @@ MODULE module_mem_allocate
     INTEGER(ki), ALLOCATABLE :: edges_ind(:,:)  
     INTEGER(ki), ALLOCATABLE :: fnormal_ind(:,:)
     
-    INTEGER(ki), INTENT(IN) :: lengU0,nbrNodes,nbrElem,nbrFront,nbrInt
+    INTEGER(ki), INTENT(IN) :: lengU0,nbrNodes,nbrElem,nbrFront,nbrInt,only_mesh
         
   END SUBROUTINE mem_allocate
   

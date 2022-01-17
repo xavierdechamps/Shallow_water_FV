@@ -4,7 +4,7 @@
 !##########################################################
 SUBROUTINE mem_allocate(node,front,elem,U0,depth,BoundCond,dt,Source,&
 &                       edges,fnormal,geom_data,cell_data_n,edges_ind,fnormal_ind,&
-&                       lengU0,nbrNodes,nbrElem,nbrFront,nbrInt)
+&                       lengU0,nbrNodes,nbrElem,nbrFront,nbrInt,only_mesh)
     USE module_shallow, only : kr,ki,nbvar
     IMPLICIT NONE
 
@@ -30,7 +30,7 @@ SUBROUTINE mem_allocate(node,front,elem,U0,depth,BoundCond,dt,Source,&
     INTEGER(ki), ALLOCATABLE :: edges_ind(:,:)  
     INTEGER(ki), ALLOCATABLE :: fnormal_ind(:,:)
     
-    INTEGER(ki), INTENT(IN) :: lengU0,nbrNodes,nbrElem,nbrFront,nbrInt
+    INTEGER(ki), INTENT(IN) :: lengU0,nbrNodes,nbrElem,nbrFront,nbrInt,only_mesh
     
     WRITE(*,*) "Allocating the memory..."
     
@@ -42,18 +42,19 @@ SUBROUTINE mem_allocate(node,front,elem,U0,depth,BoundCond,dt,Source,&
     ALLOCATE(depth(1:nbrElem))
     ALLOCATE(BoundCond(1:nbrFront,1:3))
     
+    IF (only_mesh.NE.1) THEN
     ! Requested in runge_kutta
-    ALLOCATE(dt(nbvar*nbrElem))
-    ALLOCATE(Source(nbvar*nbrElem))
+      ALLOCATE(dt(nbvar*nbrElem))
+      ALLOCATE(Source(nbvar*nbrElem))
     
     ! Requested in get_normal_to_cell
-    ALLOCATE(geom_data(1:nbrElem,1:4))
-    ALLOCATE(fnormal(1:nbrFront,1:4))
-    ALLOCATE(fnormal_ind(1:nbrFront,1:4))
-    ALLOCATE(cell_data_n(1:nbrElem,1:6))
-    ALLOCATE(edges(1:nbrInt,1:6))
-    ALLOCATE(edges_ind(1:nbrInt,1:2))
-    
+      ALLOCATE(geom_data(1:nbrElem,1:4))
+      ALLOCATE(fnormal(1:nbrFront,1:4))
+      ALLOCATE(fnormal_ind(1:nbrFront,1:4))
+      ALLOCATE(cell_data_n(1:nbrElem,1:6))
+      ALLOCATE(edges(1:nbrInt,1:6))
+      ALLOCATE(edges_ind(1:nbrInt,1:2))
+    ENDIF
 END SUBROUTINE mem_allocate
 
 !##########################################################

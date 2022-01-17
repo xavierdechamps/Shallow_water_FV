@@ -192,14 +192,14 @@ END SUBROUTINE write_gmsh
 ! SUBROUTINE read_gmsh
 !  Goal: read the mesh and the initial solution in the Gmsh .msh format
 !##########################################################
-SUBROUTINE read_gmsh(U0,lengU0,mesh_file,lengch,node,elem,front,depth,BoundCond,nbrNodes,nbrElem,nbrFront,ok)
+SUBROUTINE read_gmsh(U0,lengU0,mesh_file,lengch,node,elem,front,depth,BoundCond,nbrNodes,nbrElem,nbrFront,skip_data,ok)
     USE MODULE_SHALLOW, only : kr,ki,nbvar,time_begin, time_end
     IMPLICIT NONE
 
     ! Subroutine parameters
     INTEGER(ki), INTENT(OUT) :: ok
     INTEGER(ki), INTENT(IN) :: nbrNodes,nbrElem,nbrFront
-    INTEGER(ki), INTENT(IN) :: lengU0,lengch
+    INTEGER(ki), INTENT(IN) :: lengU0,lengch,skip_data
     REAL(kr), INTENT(OUT)    :: U0(lengU0)
     REAL(kr), INTENT(OUT)    :: node(nbrNodes,2)
     REAL(kr), INTENT(OUT)    :: depth(nbrElem)
@@ -286,8 +286,9 @@ SUBROUTINE read_gmsh(U0,lengU0,mesh_file,lengch,node,elem,front,depth,BoundCond,
        CALL find_elem_front(i,front(i,4))
     END DO
     
-    ! Initial height
+    IF (skip_data.EQ.1) GOTO 100
     
+    ! Initial height
     istep = 4
     
     DO WHILE (line .NE. "$ElementData")
@@ -370,7 +371,7 @@ SUBROUTINE read_gmsh(U0,lengU0,mesh_file,lengch,node,elem,front,depth,BoundCond,
     READ(10,*,END=100) a
     IF (a.ne.nbrFront) THEN
       WRITE(*,*) "    <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
-      WRITE(*,*) "Error reading the initial height."
+      WRITE(*,*) "Error reading the boundary condition on the height."
       WRITE(*,*) "The number of 1D elements with imposed height is",a
       WRITE(*,*) "The number of 1D boundary elements is",nbrFront
       WRITE(*,*) "    <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
@@ -392,7 +393,7 @@ SUBROUTINE read_gmsh(U0,lengU0,mesh_file,lengch,node,elem,front,depth,BoundCond,
     READ(10,*,END=100) a    
     IF (a.ne.nbrFront) THEN
       WRITE(*,*) "    <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
-      WRITE(*,*) "Error reading the initial height."
+      WRITE(*,*) "Error reading the boundary condition on the velocity."
       WRITE(*,*) "The number of 1D elements with imposed velocity is",a
       WRITE(*,*) "The number of 1D boundary elements is",nbrFront
       WRITE(*,*) "    <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
@@ -410,7 +411,6 @@ SUBROUTINE read_gmsh(U0,lengU0,mesh_file,lengch,node,elem,front,depth,BoundCond,
     CLOSE(UNIT=10)
     
 END SUBROUTINE read_gmsh
-
 
 !##########################################################
 ! SUBROUTINE read_gmsh

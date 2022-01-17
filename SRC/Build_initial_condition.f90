@@ -33,10 +33,10 @@ PROGRAM BUILD_INITIAL_SOLUTION
     ! Allocate the memory for the arrays
     CALL mem_allocate(node,front,elem,U0,depth,BoundCond,dt,Source,&
 &                     edges,fnormal,geom_data,cell_data_n,edges_ind,fnormal_ind,&
-&                     nbvar*nbrElem,nbrNodes,nbrElem,nbrFront,nbrInt)
+&                     nbvar*nbrElem,nbrNodes,nbrElem,nbrFront,nbrInt,0)
 
     ! Read the mesh and the initial solution / boundary conditions
-    CALL read_gmsh(U0,nbvar*nbrElem,mesh_file,length_names,node,elem,front,depth,BoundCond,nbrNodes,nbrElem,nbrFront,ok)
+    CALL read_gmsh(U0,nbvar*nbrElem,mesh_file,length_names,node,elem,front,depth,BoundCond,nbrNodes,nbrElem,nbrFront,0,ok)
     
     IF (ok == 0) THEN
       WRITE(*,*) "The program hasn't started because of a problem during the reading of the mesh"
@@ -92,7 +92,7 @@ SUBROUTINE write_initial_condition_gmsh()
 	
     ! Q0 = 2.5 or 5. L/s
 	Q = 5.0d0 / 1000.0d0
-	Fr_i = 4.15d0
+	Fr_i = 4.08d0
 	g = 9.81d0
 	yMax = maxval(node(:,2) )
 	

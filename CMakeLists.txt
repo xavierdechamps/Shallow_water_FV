@@ -84,8 +84,19 @@ add_executable ( get_relative_error_theory
 			)
 add_dependencies( get_relative_error_theory libmodules)
 set_target_properties ( get_relative_error_theory PROPERTIES LINKER_LANGUAGE Fortran)
-            
+
+#
+add_executable ( mesh_interpolator 
+				      ${SRC_dir}/Mesh_interpolator.f90
+				      ${SRC_dir}/gmsh_operations.f90
+				      ${SRC_dir}/find_elem.f90
+				      ${SRC_dir}/mem_allocate.f90
+			)
+add_dependencies( mesh_interpolator libmodules)
+set_target_properties ( mesh_interpolator PROPERTIES LINKER_LANGUAGE Fortran)
+
 # Linking with all the external libraries ##########################################
 target_link_libraries( shallow	                 libmodules ${BLAS_LIB} )
 target_link_libraries( build_initial_solution	 libmodules ${BLAS_LIB} )
 target_link_libraries( get_relative_error_theory libmodules ${BLAS_LIB} )
+target_link_libraries( mesh_interpolator         libmodules ${BLAS_LIB} )
