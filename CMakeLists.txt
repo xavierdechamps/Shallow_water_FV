@@ -85,6 +85,6 @@ add_dependencies( get_relative_error_theory libmodules)
 set_target_properties ( get_relative_error_theory PROPERTIES LINKER_LANGUAGE Fortran)
             
 # Linking with all the external libraries ##########################################
-target_link_libraries( shallow	                 libmodules ${BLAS_LIB} )
+target_link_libraries( shallow	                 libmodules ${BLAS_LIB} ${SIGWATCH_LIBRARIES} )
 target_link_libraries( build_initial_solution	 libmodules ${BLAS_LIB} )
 target_link_libraries( get_relative_error_theory libmodules ${BLAS_LIB} )
