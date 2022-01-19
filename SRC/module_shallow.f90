@@ -105,3 +105,37 @@ MODULE module_mem_allocate
   END INTERFACE 
   
 END MODULE module_mem_allocate
+
+!##########################################################
+! MODULE signal_handler
+!  Goal: contains all the interface to the routines that
+!        manage the interception of stop signals
+!##########################################################
+#ifdef WITHSIGWATCH
+MODULE signal_handler
+!-----------------------------------------------------------------------
+  USE, INTRINSIC :: iso_c_binding, only: C_INT, C_CHAR
+
+  IMPLICIT NONE (type, external)
+
+  INTERFACE
+
+  INTEGER(C_INT) FUNCTION watchsignalname(signame, response) bind(C)
+    import C_INT, C_CHAR
+    CHARACTER(kind=c_char), INTENT(IN) :: signame(*)
+    INTEGER(C_INT), INTENT(IN) :: response
+  END FUNCTION watchsignalname
+
+  INTEGER(C_INT) FUNCTION watchsignal(sig) bind(C)
+    import C_INT
+    INTEGER(C_INT), INTENT(IN) :: sig
+  END FUNCTION watchsignal
+
+  INTEGER(C_INT) FUNCTION getlastsignal() bind(C)
+    import C_INT
+  END FUNCTION getlastsignal
+
+  END INTERFACE
+!-----------------------------------------------------------------------
+END MODULE signal_handler
+#endif

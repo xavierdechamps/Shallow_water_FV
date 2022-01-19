@@ -4,6 +4,9 @@
 !##########################################################
 SUBROUTINE runge_kutta
     USE module_shallow
+#ifdef WITHSIGWATCH
+    USE signal_handler
+#endif
 ! On Windows, call systemqq instead of system (Linux)
 #ifdef WINDOWS
     USE IFPORT, ONLY : systemqq
@@ -13,17 +16,25 @@ SUBROUTINE runge_kutta
 
     ! Local parameters
     INTEGER(ki) :: i, k, count, ok
+    INTEGER(ki) :: statussignal
     REAL(kr), DIMENSION(nbvar*nbrElem) :: Urk, Uc, H
 !    REAL(kr), DIMENSION(4) :: beta
 !    REAL(kr), DIMENSION(3) :: alpha
     REAL(kr), ALLOCATABLE  :: error(:,:)
     CHARACTER(20) :: char
+    LOGICAL :: kill
     
     LOGICAL(4)           lreturn
     INTEGER ( KIND = 4 ) ierror
     CHARACTER ( LEN = 255 ) :: command 
     CHARACTER ( LEN = 255 ) :: data_filename = 'gnuplot_data.txt'
     CHARACTER ( LEN = 255 ) :: command_filename = 'gnuplot_commands.txt'
+    
+#ifdef WITHSIGWATCH
+    statussignal = watchsignal(2)  ! INT
+    statussignal = watchsignal(15) ! KILL
+#endif
+    kill=.false.
     
     ! DAM
 !    REAL(kr), DIMENSION(4) :: dam_points_ref
@@ -132,6 +143,21 @@ SUBROUTINE runge_kutta
 
        U0 = Uc
        Uc = 0.0d00
+       
+#ifdef WITHSIGWATCH
+       statussignal=getlastsignal()
+       IF (statussignal.eq.2 .or. statussignal.eq.15)   THEN
+         kill=.true.
+       ENDIF
+       
+       IF (kill) THEN
+         WRITE(*,*) "Catched a kill signal, saving the data and stopping"
+          CALL write_gmsh(i,count)
+          CALL write_solution(ok)
+         EXIT
+       ENDIF
+#endif
+
     END DO
 
     ! DAM

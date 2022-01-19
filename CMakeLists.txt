@@ -25,7 +25,7 @@ else ()
    set ( ENVI_FLAG  "" )
 endif()
 
-add_definitions ( ${ENVI_FLAG} )
+add_definitions ( ${ENVI_FLAG} ${SIGWATCH_FLAG} )
 
 # The executables are put in the source_dir/EXE directory ##########################
 message ( "The executables are to be put in ${CMAKE_CURRENT_SOURCE_DIR}/EXE" )
@@ -96,7 +96,7 @@ add_dependencies( mesh_interpolator libmodules)
 set_target_properties ( mesh_interpolator PROPERTIES LINKER_LANGUAGE Fortran)
 
 # Linking with all the external libraries ##########################################
-target_link_libraries( shallow	                 libmodules ${BLAS_LIB} )
+target_link_libraries( shallow	                 libmodules ${BLAS_LIB} ${SIGWATCH_LIBRARIES} )
 target_link_libraries( build_initial_solution	 libmodules ${BLAS_LIB} )
 target_link_libraries( get_relative_error_theory libmodules ${BLAS_LIB} )
 target_link_libraries( mesh_interpolator         libmodules ${BLAS_LIB} )
