@@ -44,6 +44,7 @@ END MODULE module_shallow
 !  Goal: contains all the interface to the routines that
 !        manage the interception of stop signals
 !##########################################################
+#ifdef WITHSIGWATCH
 MODULE signal_handler
 !-----------------------------------------------------------------------
   USE, INTRINSIC :: iso_c_binding, only: C_INT, C_CHAR
@@ -70,3 +71,4 @@ MODULE signal_handler
   END INTERFACE
 !-----------------------------------------------------------------------
 END MODULE signal_handler
+#endif

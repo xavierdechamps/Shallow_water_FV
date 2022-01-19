@@ -25,7 +25,7 @@ else ()
    set ( ENVI_FLAG  "" )
 endif()
 
-add_definitions ( ${ENVI_FLAG} )
+add_definitions ( ${ENVI_FLAG} ${SIGWATCH_FLAG} )
 
 # The executables are put in the source_dir/EXE directory ##########################
 message ( "The executables are to be put in ${CMAKE_CURRENT_SOURCE_DIR}/EXE" )
