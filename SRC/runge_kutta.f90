@@ -152,8 +152,8 @@ SUBROUTINE runge_kutta
        
        IF (kill) THEN
          WRITE(*,*) "Catched a kill signal, saving the data and stopping"
-          CALL write_gmsh(i,count)
-          CALL write_solution(ok)
+         CALL write_gmsh(U0,nbvar*nbrElem,file_gmsh,length_names,node,elem,front,nbrNodes,nbrElem,nbrFront,i,count)
+         CALL write_solution(U0,nbvar*nbrElem,file_dat,length_names,ok)
          EXIT
        ENDIF
 #endif

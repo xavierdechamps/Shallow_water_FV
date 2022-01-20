@@ -92,7 +92,7 @@ SUBROUTINE write_initial_condition_gmsh()
 	
     ! Q0 = 2.5 or 5. L/s
 	Q = 5.0d0 / 1000.0d0
-	Fr_i = 4.08d0
+	Fr_i = 4.d0
 	g = 9.81d0
 	yMax = maxval(node(:,2) )
 	
@@ -134,7 +134,7 @@ SUBROUTINE write_initial_condition_gmsh()
     xMax = maxval(node(:,1) )
     xMin = minval(node(:,1) )
     hleft = 0.0d0
-    slope = 0.000d0 ! = Dy / Dx
+    slope = 0.015d0 ! = Dy / Dx
             
     DO i=1,nbrElem
       
