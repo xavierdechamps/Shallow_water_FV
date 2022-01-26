@@ -89,14 +89,8 @@ SUBROUTINE write_initial_condition_gmsh()
     write(10,'(T1,I9)') 0
     write(10,'(T1,A1)') "1"
     write(10,'(T1,I9)') nbrElem
-	
-    ! Q0 = 2.5 or 5. L/s
-	Q = 5.0d0 / 1000.0d0
-	Fr_i = 4.d0
-	g = 9.81d0
-	yMax = maxval(node(:,2) )
-	
-    h_i = ( Q*Q / (yMax*yMax*Fr_i*Fr_i*g) )**(1.d0/3.d0)
+		
+    h_i = 0.03048d00
         
     write(10,'(T1,I9,ES24.16E2)') (i+nbrFront, h_i,i=1,nbrElem)
     write(10,'(T1,A15)') "$EndElementData"
@@ -112,6 +106,8 @@ SUBROUTINE write_initial_condition_gmsh()
     write(10,'(T1,A1)') "3"
     write(10,'(T1,I9)') nbrElem
     
+    Q = 0.041
+    yMax = 0.6096
 	u_i = Q / ( yMax * h_i )
     U = u_i
     V = 0.d0
@@ -134,8 +130,9 @@ SUBROUTINE write_initial_condition_gmsh()
     xMax = maxval(node(:,1) )
     xMin = minval(node(:,1) )
     hleft = 0.0d0
-    slope = 0.015d0 ! = Dy / Dx
-            
+    ! slope = 0.05664d0 ! = Dy / Dx
+    slope = 0.01d0 ! = Dy / Dx
+    
     DO i=1,nbrElem
       
       xe =  (node(elem(i,1),1)+node(elem(i,2),1)+node(elem(i,3),1) ) /3.d0
