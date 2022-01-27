@@ -38,7 +38,7 @@ MODULE module_shallow
     
     LOGICAL   :: restart,steady
     
-    REAL(kr)  :: CFL, ggrav, deltaTfixed, eps, manning
+    REAL(kr)  :: CFL, ggrav, deltaTfixed, eps, manning_b, manning_w
     
 END MODULE module_shallow
 

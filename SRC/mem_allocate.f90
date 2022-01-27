@@ -49,7 +49,7 @@ SUBROUTINE mem_allocate(node,front,elem,U0,depth,BoundCond,dt,Source,&
     
     ! Requested in get_normal_to_cell
       ALLOCATE(geom_data(1:nbrElem,1:4))
-      ALLOCATE(fnormal(1:nbrFront,1:4))
+      ALLOCATE(fnormal(1:nbrFront,1:5))
       ALLOCATE(fnormal_ind(1:nbrFront,1:4))
       ALLOCATE(cell_data_n(1:nbrElem,1:6))
       ALLOCATE(edges(1:nbrInt,1:6))

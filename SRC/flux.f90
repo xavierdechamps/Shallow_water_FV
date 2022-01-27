@@ -2,25 +2,27 @@
 ! SUBROUTINE flux
 !  Goal: compute the global flux defined by the finite volume method
 !##########################################################
-SUBROUTINE flux(Hvec,SourceDepth, Q)
+SUBROUTINE flux(Hvec,Source_sf, Q)
     USE module_shallow
     IMPLICIT NONE
 
     ! Subroutine parameters
     REAL(kr), DIMENSION(1:nbvar*nbrElem), INTENT(IN) :: Q
     REAL(kr), DIMENSION(1:nbvar*nbrElem), INTENT(OUT) :: Hvec
-    REAL(kr), DIMENSION(1:nbvar*nbrElem), INTENT(OUT) :: SourceDepth
+    REAL(kr), DIMENSION(1:nbvar*nbrElem), INTENT(OUT) :: Source_sf
 
     ! Local parameters
     REAL(kr), DIMENSION(1:nbvar) :: temp
-    REAL(kr), DIMENSION(1:nbvar) :: qL, qR, Fav, Fup, qAv, sourceloc
+    REAL(kr), DIMENSION(1:nbvar) :: qL, qR, Fav, Fup, qAv, sourceloc_f, sourceloc_s
     REAL(kr), DIMENSION(1:nbvar,1:2) :: FL, FR
     REAL(kr), DIMENSION(1:2) :: n
     REAL(kr) :: ds, SL, SR, h, u, v, c, Froude, dij, Hi, Hj
     INTEGER(ki) :: i, idL, idR, error
+    LOGICAL  :: iswall
 
     Hvec = zero
-    SourceDepth = zero
+    Source_sf = zero
+    iswall = .FALSE.
     ! Loop on the internal edges
     internal : DO i=1,nbrInt
        temp = zero
@@ -54,12 +56,12 @@ SUBROUTINE flux(Hvec,SourceDepth, Q)
        Hj = depth(idR) ! geometric depth, cell right to the edge
        
        ! Get the upwind + source terms
-       CALL getUpwind_and_Source(qL,qR,qAv,n,Fup,sourceloc,Hi,Hj,dij)
+       CALL getUpwind_and_Source(qL,qR,qAv,n,Fup,sourceloc_f,sourceloc_s,Hi,Hj,dij,iswall)
        
        ! Add the contribution to the element idL
        temp = (Fav + Fup)*ds/SL
-       Hvec       (idL*nbvar-2:idL*nbvar) = Hvec       (idL*nbvar-2:idL*nbvar) + temp
-       SourceDepth(idL*nbvar-2:idL*nbvar) = SourceDepth(idL*nbvar-2:idL*nbvar) + sourceloc * edges(i,5) / SL
+       Hvec     (idL*nbvar-2:idL*nbvar) = Hvec     (idL*nbvar-2:idL*nbvar) + temp
+       Source_sf(idL*nbvar-2:idL*nbvar) = Source_sf(idL*nbvar-2:idL*nbvar) + (sourceloc_f+sourceloc_s) * edges(i,5) / SL
        
        ! Add the contribution to the other element idR, Fav -> -Fav
        n = -n
@@ -68,12 +70,12 @@ SUBROUTINE flux(Hvec,SourceDepth, Q)
        dij = SQRT( ( geom_data(idR,3) - edges(i,3) )**2 + ( geom_data(idR,4) - edges(i,4) )**2 )
        
        ! Get the upwind + source terms
-       CALL getUpwind_and_Source(qR,qL,qAv,n,Fup,sourceloc,Hj,Hi,dij)
+       CALL getUpwind_and_Source(qR,qL,qAv,n,Fup,sourceloc_f,sourceloc_s,Hj,Hi,dij,iswall)
        
        ! Add the contribution to the element idR
        temp = (- Fav + Fup)*ds/SR
-       Hvec       (idR*nbvar-2:idR*nbvar) = Hvec       (idR*nbvar-2:idR*nbvar) + temp
-       SourceDepth(idR*nbvar-2:idR*nbvar) = SourceDepth(idR*nbvar-2:idR*nbvar) + sourceloc * edges(i,6) / SR
+       Hvec     (idR*nbvar-2:idR*nbvar) = Hvec     (idR*nbvar-2:idR*nbvar) + temp
+       Source_sf(idR*nbvar-2:idR*nbvar) = Source_sf(idR*nbvar-2:idR*nbvar) + (sourceloc_f+sourceloc_s) * edges(i,6) / SR
 
     END DO internal
 
@@ -157,12 +159,12 @@ SUBROUTINE flux(Hvec,SourceDepth, Q)
        Hj = depth(idL)
        
        ! Get the upwind term. The source term is not relevant for border edges
-       CALL getUpwind_and_Source(qL,qR,qAv,n,Fup,sourceloc,Hi,Hj,dij)
+       CALL getUpwind_and_Source(qL,qR,qAv,n,Fup,sourceloc_f,sourceloc_s,Hi,Hj,dij,iswall)
        
        ! Add the contribution to the element idL
        temp = (Fav + Fup)*ds/SL
        Hvec(idL*nbvar-2:idL*nbvar) = Hvec(idL*nbvar-2:idL*nbvar) + temp
-!       SourceDepth(idL*nbvar-2:idL*nbvar) = SourceDepth(idL*nbvar-2:idL*nbvar) + sourceloc
+       Source_sf(idL*nbvar-2:idL*nbvar) = Source_sf(idL*nbvar-2:idL*nbvar) + sourceloc_f * fnormal(i,5) / SL
  
     END DO border
 
@@ -200,21 +202,25 @@ END SUBROUTINE getFlux
 !  Goal: compute the upwind correction flux defined by the finite volume method
 !        for both the flux and source terms
 !##########################################################
-SUBROUTINE getUpwind_and_Source(qL,qR,qAvg,n,Fout,Source,Hi,Hj,dij)
-    USE module_shallow, only : kr,ki,ggrav,manning,nbvar
+SUBROUTINE getUpwind_and_Source(qL,qR,qAvg,n,Fout,source_f,source_s,Hi,Hj,dij,iswall)
+    USE module_shallow, only : kr,ki,ggrav,manning_b,manning_w,nbvar,zero
     USE booklib
     IMPLICIT NONE
     
     ! Subroutine parameters
     REAL(kr), DIMENSION(2), INTENT(IN) :: n
     REAL(kr), DIMENSION(1:nbvar), INTENT(IN)  :: qL, qR, qAvg
-    REAL(kr), DIMENSION(1:nbvar), INTENT(OUT) :: Fout,Source
+    REAL(kr), DIMENSION(1:nbvar), INTENT(OUT) :: Fout,source_f,source_s
+    LOGICAL :: iswall
     
     ! Local parameters
     REAL(kr), DIMENSION(1:nbvar,1:nbvar) :: Qmat,sourceMat
     REAL(kr), DIMENSION(1:nbvar)         :: qLloc, qRloc,tmp
     REAL(kr)                             :: tempval, Hi, Hj, dij
-        
+    
+    source_f = zero
+    source_s = zero
+    
     qLloc = QL
     qRloc = QR
     ! Set again hu,hv as the variables
@@ -229,17 +235,17 @@ SUBROUTINE getUpwind_and_Source(qL,qR,qAvg,n,Fout,Source,Hi,Hj,dij)
     tmp = MATMUL( Qmat , qRloc - qLloc )
     Fout = - 0.5d00 * tmp
     
-    ! Get the upwind corrected source term
+    ! Get the upwind corrected source term (bed slope)
     tmp = 0.0d00
     tempval = - 0.5d00 * ggrav * ( QL(1)+QR(1) ) * ( Hj - Hi ) / dij
     tmp(2) = tempval*n(1)
     tmp(3) = tempval*n(2)
-    Source = MATMUL( sourceMat , tmp )
+    source_s = MATMUL( sourceMat , tmp )
     
     ! Friction slope x: -g h n^2 u(u^2 + v^2)^(1/2) / h^(4/3)
     !                y: -g h n^2 v(u^2 + v^2)^(1/2) / h^(4/3)
-    Source(2) = Source(2) - ggrav * QL(1) * manning*manning * QL(2) * sqrt(ql(2)**2 + qR(2)**2) / (QL(1)**(4.d00/3.d00))
-    Source(3) = Source(3) - ggrav * QL(1) * manning*manning * QL(3) * sqrt(ql(2)**2 + qR(2)**2) / (QL(1)**(4.d00/3.d00))
+    source_f(2) = - ggrav * QL(1) * manning_b*manning_b * QL(2) * sqrt(ql(2)**2 + qR(2)**2) / (QL(1)**(4.d00/3.d00))
+    source_f(3) = - ggrav * QL(1) * manning_b*manning_b * QL(3) * sqrt(ql(2)**2 + qR(2)**2) / (QL(1)**(4.d00/3.d00))
     
 END SUBROUTINE getUpwind_and_Source
 

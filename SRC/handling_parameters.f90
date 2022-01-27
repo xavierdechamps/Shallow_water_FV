@@ -42,7 +42,8 @@ SUBROUTINE read_parameters(file_name,ok)
     READ(20,iostat=ierr,err=8,fmt='(I9,a100)')  shownTime,tmp
     READ(20,iostat=ierr,err=8,fmt='(I9,a100)')  savenTime,tmp
     READ(20,iostat=ierr,err=8,fmt='(ES15.7E3,a100)')  ggrav,tmp
-    READ(20,iostat=ierr,err=8,fmt='(ES15.7E3,a100)')  manning,tmp
+    READ(20,iostat=ierr,err=8,fmt='(ES15.7E3,a100)')  manning_b,tmp
+    READ(20,iostat=ierr,err=8,fmt='(ES15.7E3,a100)')  manning_w,tmp
     READ(20,iostat=ierr,err=8,fmt='(I9,a100)')  steady,tmp
     READ(20,iostat=ierr,err=8,fmt='(ES15.7E3,a100)')  CFL,tmp
     READ(20,iostat=ierr,err=8,fmt='(ES15.7E3,a100)')  deltaTfixed,tmp
@@ -91,7 +92,8 @@ SUBROUTINE print_correct_parameters()
     WRITE(*,'(a7,23x,a)')  "INTEGER",": Statistics are printed every X steps"
     WRITE(*,'(a7,23x,a)')  "INTEGER",": Solution is saved every X steps"
     WRITE(*,'(a4,26x,a)')  "REAL",": g : the gravity constant"
-    WRITE(*,'(a4,26x,a)')  "REAL",": n : Manning roughness coefficient"
+    WRITE(*,'(a4,26x,a)')  "REAL",": n : Manning roughness coefficient (bed)"
+    WRITE(*,'(a4,26x,a)')  "REAL",": n : Manning roughness coefficient (wall)"
     WRITE(*,'(a7,23x,a)')  "INTEGER",": [1] steady or [0] unsteady flow"
     WRITE(*,'(a4,26x,a)')  "REAL",": CFL number (used only for steady flows)"
     WRITE(*,'(a4,26x,a)')  "REAL",": time step [s] (used only for unsteady flows)"
@@ -129,7 +131,8 @@ SUBROUTINE print_parameters(file_name)
     WRITE(*,'(i9,31x,a)')       shownTime,": Statistics are printed every X steps"
     WRITE(*,'(i9,31x,a)')       savenTime,": Solution is saved every X steps"
     WRITE(*,'(ES15.7E3,25x,a)') ggrav,": g : the gravity constant"
-    WRITE(*,'(ES15.7E3,25x,a)') manning,": n : Manning roughness coefficient"
+    WRITE(*,'(ES15.7E3,25x,a)') manning_b,": n : Manning roughness coefficient (bed)"
+    WRITE(*,'(ES15.7E3,25x,a)') manning_w,": n : Manning roughness coefficient (wall)"
     WRITE(*,'(i9,31x,a)')       steady,": [1] steady or [0] unsteady flow"
     WRITE(*,'(ES15.7E3,25x,a)') CFL,": CFL number (used only for steady flows)"
     WRITE(*,'(ES15.7E3,25x,a)') deltaTfixed,": time step [s] (used only for unsteady flows)"

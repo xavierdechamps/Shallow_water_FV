@@ -42,6 +42,7 @@ SUBROUTINE get_normal_to_cell
     
     ! fnormal(:,1:2)   : XY components of normal to boundary edge
     ! fnormal(:,3:4)   : XY components of center of boundary edge
+    ! fnormal(:,5)     : Area of subtriangle made by the border edge and the center of cell
     
     ! fnormal_ind(:,1) : 2D element ID to which the boundary edge is attached
     ! fnormal_ind(:,2) : physical tag of the edge as defined in the msh
@@ -119,6 +120,10 @@ SUBROUTINE get_normal_to_cell
              fnormal(nId,1) = cell_data(i,idn)
              fnormal(nId,2) = cell_data(i,idn+1)
              
+             ! Coordinates of center of current cell
+             xa = cell_data(i,1)
+             ya = cell_data(i,2)
+             
              ! Coordinates of the 2 nodes of the edge
              xb = node(cell_node_ids(i,j-9,1),1)
              yb = node(cell_node_ids(i,j-9,1),2)
@@ -127,6 +132,9 @@ SUBROUTINE get_normal_to_cell
              
              ! x,y components of the center of the edge
              fnormal(nId,3:4) = 0.5d0*(/ xb+xc , yb+yc/)
+             
+             ! Area of subtriangle made by the border edge and the center of current cell
+             fnormal(nId,5) = 0.5*ABS((xb-xa)*(yc-ya)-(xc-xa)*(yb-ya))
              
              fnormal_ind(nId,1) = i
              CALL find_vector(front(:,4),i,front1,front2)
