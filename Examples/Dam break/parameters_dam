@@ -7,11 +7,12 @@ dam_ref_sol.msh                              : name of the output, gmsh format
 dam_ref_sol.dat                              : name of the output, dat format
 dam_ref_sol.dat                              : name of the restart file, dat format
 720                           : total number of temporal steps
-20                           : statistics are printed every X steps
-20                          : solution is saved every X steps
-9.81                            : g : the gravity constant
-0.00                          : Manning roughness coefficient
+20                            : statistics are printed every X steps
+20                            : solution is saved every X steps
+9.81                          : g : the gravity constant
+0.0                           : Manning roughness coefficient (bed)
+0.0                           : Manning roughness coefficient (wall)
 0                             : [1] steady or [0] unsteady flow
 2.4                           : CFL number (used only for steady flows)
-0.01                           : time step [s] (used only for unsteady flows)
+0.01                          : time step [s] (used only for unsteady flows)
 0                             : restart from previous simulation [0] no or [1] yes

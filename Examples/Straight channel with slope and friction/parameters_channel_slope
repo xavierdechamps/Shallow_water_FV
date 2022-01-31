@@ -10,7 +10,8 @@ channel_slope_sol.dat                          : name of the restart file, dat f
 500                            : statistics are printed every X steps
 500                            : solution is saved every X steps
 9.81                          : g : the gravity constant
-0.01                          : Manning roughness coefficient
+0.01                          : Manning roughness coefficient (bed)
+0.0                           : Manning roughness coefficient (wall)
 1                             : [1] steady or [0] unsteady flow
 2.4                           : CFL number (used only for steady flows)
 0.002                         : time step [s] (used only for unsteady flows)

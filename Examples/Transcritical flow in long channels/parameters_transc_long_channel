@@ -6,11 +6,12 @@ transcritical_long_channel_Ld500_i.msh                   : name of mesh file
 transcritical_long_channel_Ld500_s.msh               : name of the output, gmsh format
 transcritical_long_channel_Ld500_s.dat               : name of the output, dat format
 transcritical_long_channel_Ld500_s.dat                       : name of the restart file, dat format
-10000                           : total number of temporal steps
-200                            : statistics are printed every X steps
-1000                            : solution is saved every X steps
-9.81                           : g : the gravity constant
-0.04                          : Manning roughness coefficient
+10000                         : total number of temporal steps
+200                           : statistics are printed every X steps
+1000                          : solution is saved every X steps
+9.81                          : g : the gravity constant
+0.04                          : Manning roughness coefficient (bed)
+0.0                           : Manning roughness coefficient (wall)
 1                             : [1] steady or [0] unsteady flow
 2.4                           : CFL number (used only for steady flows)
 0.002                         : time step [s] (used only for unsteady flows)

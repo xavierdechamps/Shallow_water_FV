@@ -1,5 +1,6 @@
 PROGRAM BUILD_INITIAL_SOLUTION
     USE module_shallow
+    USE module_mem_allocate
     IMPLICIT NONE
     
     INTEGER(ki) :: ok
@@ -22,14 +23,30 @@ PROGRAM BUILD_INITIAL_SOLUTION
     ENDIF
     CALL get_command_argument(2,file_gmsh)
     
-    CALL read_gmsh(ok)
+    ! Browse the mesh to get the size of the arrays
+    CALL browse_gmsh(mesh_file,length_names,nbrNodes,nbrElem,nbrFront,ok)
+    IF (ok == 0) THEN
+      WRITE(*,*) "The program hasn't started because of a problem during the browsing of the mesh"
+      GOTO 200
+    endif
+    
+    ! Allocate the memory for the arrays
+    CALL mem_allocate(node,front,elem,U0,depth,BoundCond,dt,Source,&
+&                     edges,fnormal,geom_data,cell_data_n,edges_ind,fnormal_ind,&
+&                     nbvar*nbrElem,nbrNodes,nbrElem,nbrFront,nbrInt,0)
+
+    ! Read the mesh and the initial solution / boundary conditions
+    CALL read_gmsh(U0,nbvar*nbrElem,mesh_file,length_names,node,elem,front,depth,BoundCond,nbrNodes,nbrElem,nbrFront,0,ok)
     IF (ok == 0) THEN
       WRITE(*,*) "The program hasn't started because of a problem during the reading of the mesh"
       GOTO 200
     ELSE
-!      CALL get_normal_to_cell()
       CALL write_initial_condition_gmsh()
     ENDIF
+    
+    ! Deallocate the memory for the arrays
+    CALL mem_deallocate(node,front,elem,U0,depth,BoundCond,dt,Source,&
+&                       edges,fnormal,geom_data,cell_data_n,edges_ind,fnormal_ind)
     
 200 CONTINUE
     WRITE(*,*) "End of the program"
@@ -75,7 +92,7 @@ SUBROUTINE write_initial_condition_gmsh()
     arrayout = 0.d00
     
     DO i=1,nbrElem
-        hleft = 0.7d0
+        hleft = 1.15d0
         arrayout(i) = hleft         
     ENDDO
     
@@ -94,7 +111,7 @@ SUBROUTINE write_initial_condition_gmsh()
     write(10,'(T1,I9)') nbrElem
     
     do i=1,nbrElem
-        U = 4.0d0 / 0.7d0
+        U = 4.0d0 / 1.15d0
         V = 0.d0    
         write(10,'(T1,I9,2ES24.16E2,F4.1)') i+nbrFront, U, V, 0.
     end do
@@ -144,8 +161,8 @@ SUBROUTINE write_initial_condition_gmsh()
     write(10,'(T1,I9)') nbrFront
     
     do i=1,nbrFront
-        h_inlet = 0.7d0
-        h_outlet = 0.7d0
+        h_inlet = 1.15d0
+        h_outlet = 1.15d0
         IF ( front(i,3).eq.1 ) THEN
         ! Inlet 
             write(10,'(T1,I9,2X,ES24.16E2)') i, h_inlet
@@ -172,7 +189,7 @@ SUBROUTINE write_initial_condition_gmsh()
     write(10,'(T1,I9)') nbrFront
     
     do i=1,nbrFront
-        u_inlet = 4.d0 / 0.7d0
+        u_inlet = 4.d0 / 1.15d0
         v_inlet = 0.d0
         IF ( front(i,3).eq.1 ) THEN
         ! Inlet 

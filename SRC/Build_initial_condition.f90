@@ -37,7 +37,6 @@ PROGRAM BUILD_INITIAL_SOLUTION
 
     ! Read the mesh and the initial solution / boundary conditions
     CALL read_gmsh(U0,nbvar*nbrElem,mesh_file,length_names,node,elem,front,depth,BoundCond,nbrNodes,nbrElem,nbrFront,0,ok)
-    
     IF (ok == 0) THEN
       WRITE(*,*) "The program hasn't started because of a problem during the reading of the mesh"
       GOTO 200
@@ -62,7 +61,7 @@ SUBROUTINE write_initial_condition_gmsh()
     integer(ki) :: ierr, i, wall_type, edge_id
     real(kr) :: h, hleft,hright, u, v, h_inlet, u_inlet, v_inlet, h_outlet
     real(kr) :: xMax,xMin,xCenter,circleRadius, circleShiftY, x1, x2, xe
-    real(kr) :: slope, Q, Fr_i, h_i, g, yMax, u_i
+    real(kr) :: slope
     real(kr) :: arrayout(1:nbrElem)
             
     open(unit=10,file=file_gmsh,status="replace",iostat=ierr,form='formatted')
@@ -89,10 +88,15 @@ SUBROUTINE write_initial_condition_gmsh()
     write(10,'(T1,I9)') 0
     write(10,'(T1,A1)') "1"
     write(10,'(T1,I9)') nbrElem
-		
-    h_i = 0.03048d00
-        
-    write(10,'(T1,I9,ES24.16E2)') (i+nbrFront, h_i,i=1,nbrElem)
+    
+    arrayout = 0.d00
+    
+    DO i=1,nbrElem
+        hleft = 1.15d0
+        arrayout(i) = hleft         
+    ENDDO
+    
+    write(10,'(T1,I9,ES24.16E2)') (i+nbrFront, arrayout(i),i=1,nbrElem)
     write(10,'(T1,A15)') "$EndElementData"
     
     !************************************* INITIAL VELOCITY
@@ -106,12 +110,11 @@ SUBROUTINE write_initial_condition_gmsh()
     write(10,'(T1,A1)') "3"
     write(10,'(T1,I9)') nbrElem
     
-    Q = 0.041
-    yMax = 0.6096
-	u_i = Q / ( yMax * h_i )
-    U = u_i
-    V = 0.d0
-    write(10,'(T1,I9,2ES24.16E2,F4.1)') (i+nbrFront, U, V, 0.,i=1,nbrElem)
+    do i=1,nbrElem
+        U = 4.0d0 / 1.15d0
+        V = 0.d0    
+        write(10,'(T1,I9,2ES24.16E2,F4.1)') i+nbrFront, U, V, 0.
+    end do
     
     write(10,'(T1,A15)') "$EndElementData"
 
@@ -126,13 +129,14 @@ SUBROUTINE write_initial_condition_gmsh()
     write(10,'(T1,A1)') "1"
     write(10,'(T1,I9)') nbrElem
     
-	! Linear slope
+    arrayout = 0.d00
+    
+! Linear slope
     xMax = maxval(node(:,1) )
     xMin = minval(node(:,1) )
-    hleft = 0.0d0
-    ! slope = 0.05664d0 ! = Dy / Dx
-    slope = 0.01d0 ! = Dy / Dx
-    
+    hleft = 2.0d0
+    slope = 0.002d0 ! = Dy / Dx
+            
     DO i=1,nbrElem
       
       xe =  (node(elem(i,1),1)+node(elem(i,2),1)+node(elem(i,3),1) ) /3.d0
@@ -141,7 +145,7 @@ SUBROUTINE write_initial_condition_gmsh()
       arrayout(i) = hleft - slope*(xe-xMin)
       
     ENDDO
-	
+    
     write(10,'(T1,I9,ES24.16E2)') (i+nbrFront, arrayout(i),i=1,nbrElem)
     write(10,'(T1,A15)') "$EndElementData"
     
@@ -157,13 +161,18 @@ SUBROUTINE write_initial_condition_gmsh()
     write(10,'(T1,I9)') nbrFront
     
     do i=1,nbrFront
-        h_inlet = h_i
-        IF ( front(i,3).eq.1 .or.front(i,3).eq.2) THEN
+        h_inlet = 1.15d0
+        h_outlet = 1.15d0
+        IF ( front(i,3).eq.1 ) THEN
         ! Inlet 
             write(10,'(T1,I9,2X,ES24.16E2)') i, h_inlet
+        ELSE IF ( front(i,3).eq.2 ) THEN
+        ! Outlet 
+            write(10,'(T1,I9,2X,ES24.16E2)') i, h_outlet
         ELSE
             write(10,'(T1,I9,2X,ES24.16E2)') i, 0.
         ENDIF
+    
     end do
     
     write(10,'(T1,A15)') "$EndElementData"
@@ -180,14 +189,15 @@ SUBROUTINE write_initial_condition_gmsh()
     write(10,'(T1,I9)') nbrFront
     
     do i=1,nbrFront
-	   u_inlet = u_i
-       v_inlet = 0.d0
-       IF ( front(i,3).eq.1 ) THEN
+        u_inlet = 4.d0 / 1.15d0
+        v_inlet = 0.d0
+        IF ( front(i,3).eq.1 ) THEN
         ! Inlet 
             write(10,'(T1,I9,1X,2ES24.16E2,F4.1)') i, u_inlet, v_inlet, 0.
         ELSE
             write(10,'(T1,I9,1X,3F4.1)') i, 0. , 0. , 0.
         ENDIF
+    
     end do
     
     write(10,'(T1,A15)') "$EndElementData"
