@@ -18,14 +18,22 @@ include( "CMake.config" )
 
 # Include the flags in the compiler options #####################################
 if ( Windows )
-   message ( "   Windows environment ..." )
+   message ( "   Windows environment..." )
    set ( ENVI_FLAG  "-DWINDOWS" )
 else ()
    message ( "   Linux/MAX environment..." )
    set ( ENVI_FLAG  "" )
 endif()
 
-add_definitions ( ${ENVI_FLAG} ${SIGWATCH_FLAG} )
+if ( Have_Gnuplot )
+   message ( "   Gnuplot is installed..." )
+   set ( GNUPLOT_FLAG  "-DWITHGNUPLOT" )
+else ()
+   message ( "   Gnuplot is not installed..." )
+   set ( GNUPLOT_FLAG  "" )
+endif()
+
+add_definitions ( ${ENVI_FLAG} ${SIGWATCH_FLAG} ${GNUPLOT_FLAG} )
 
 # The executables are put in the source_dir/EXE directory ##########################
 message ( "The executables are to be put in ${CMAKE_CURRENT_SOURCE_DIR}/EXE" )
@@ -54,12 +62,14 @@ add_executable ( shallow
 				      ${SRC_dir}/gmsh_operations.f90
 				      ${SRC_dir}/find_elem.f90
 				      ${SRC_dir}/flux.f90
-				      ${SRC_dir}/gnufor.f90
 				      ${SRC_dir}/Main.f90
 				      ${SRC_dir}/runge_kutta.f90
 				      ${SRC_dir}/handling_parameters.f90
 				      ${SRC_dir}/mem_allocate.f90
-			)
+                )
+if ( Have_Gnuplot )
+  target_sources( shallow PUBLIC ${SRC_dir}/gnufor.f90 )
+endif()
 add_dependencies( shallow libmodules)
 set_target_properties ( shallow PROPERTIES LINKER_LANGUAGE Fortran)
 

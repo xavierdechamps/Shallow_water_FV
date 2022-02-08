@@ -116,7 +116,8 @@ SUBROUTINE runge_kutta
        ! Every X time steps, print the relative error, plot it with gnuplot
        IF (MOD(i,shownTime)==0) THEN
           WRITE(*,'(A10,3X,I9,A1,I9,A13,3ES15.8)') "Time step ",i,"/",nTime," - Errors : ", error(i,2:4)
-
+    
+#ifdef WITHGNUPLOT
           IF (steady) THEN
 
 #ifdef WINDOWS
@@ -129,6 +130,7 @@ SUBROUTINE runge_kutta
             CALL run_gnuplot ( command_filename )
           
           ENDIF
+#endif
           
        END IF
        

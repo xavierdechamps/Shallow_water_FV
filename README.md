@@ -7,8 +7,8 @@ A third order Total Variation Diminishing Runge-Kutta and a fourth order explici
 Steady and unsteady computations can be simulated by switching on/off a local time stepping calculation.
 Further information can be found in the documentation [shallow_water.pdf](Doc/shallow_water.pdf).
 
-The code can be compiled by cmake as the necessary files ([CMakeLists.txt](CMakeLists.txt) and [CMake.config](CMake.config)) are provided.
-The user has to modify the content of [CMake.config](CMake.config) to his/her own configuration.
+The code can be compiled by CMake as the necessary files ([CMakeLists.txt](CMakeLists.txt) and [CMake.config](CMake.config)) are provided.
+The user can modify the content of [CMake.config](CMake.config) to his/her own configuration, in particular the parameters Windows, Have_SigWatch and Have_Gnuplot.
 
 Hereunder an example of a supercritical flow inside a converging channel:
 ![supercritical flow inside a converging channel](https://github.com/xavierdechamps/Shallow_water_FV/blob/main/Doc/pics/supercritical_symmetrical_contraction_2Dsol.png)
