@@ -61,7 +61,7 @@ SUBROUTINE write_initial_condition_gmsh()
     integer(ki) :: ierr, i, wall_type, edge_id
     real(kr) :: h, hleft,hright, u, v, h_inlet, u_inlet, v_inlet, h_outlet
     real(kr) :: xMax,xMin,xCenter,circleRadius, circleShiftY, x1, x2, xe
-    real(kr) :: slope
+    real(kr) :: slope1,slope2,slope
     real(kr) :: arrayout(1:nbrElem)
             
     open(unit=10,file=file_gmsh,status="replace",iostat=ierr,form='formatted')
@@ -134,16 +134,23 @@ SUBROUTINE write_initial_condition_gmsh()
 ! Linear slope
     xMax = maxval(node(:,1) )
     xMin = minval(node(:,1) )
-    hleft = 2.0d0
-    slope = 0.002d0 ! = Dy / Dx
-            
+    hright = 2.0d0
+    slope1 = 0.002d0
+    slope2 = 0.0005d0
+    
     DO i=1,nbrElem
       
       xe =  (node(elem(i,1),1)+node(elem(i,2),1)+node(elem(i,3),1) ) /3.d0
       
-      ! Linear slope
-      arrayout(i) = hleft - slope*(xe-xMin)
-      
+      IF (xe .LE. (xMax*0.5d00)) THEN ! Steep
+        hleft = hright
+        slope = slope1
+        arrayout(i) = hleft - slope*(xe-xMin)
+      ELSE                          ! Mild
+        slope = slope2
+        hleft = hright - slope1*xMax*0.5d00  
+        arrayout(i) = hleft - slope*(xe-xMin-xMax*0.5d00)     
+      ENDIF      
     ENDDO
     
     write(10,'(T1,I9,ES24.16E2)') (i+nbrFront, arrayout(i),i=1,nbrElem)
