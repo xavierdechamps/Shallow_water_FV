@@ -60,7 +60,8 @@ SUBROUTINE write_initial_condition_gmsh()
 
     integer(ki) :: ierr, i, wall_type, edge_id
     real(kr) :: h, hleft,hright, u, v, h_inlet, u_inlet, v_inlet, h_outlet
-    real(kr) :: xMax,xMin,xCenter,circleRadius, circleShiftY, x1, x2, xe
+    real(kr) :: xMax,xMin,xCenter,circleRadius, circleShiftY, x1, x2, xe, ye
+    real(kr) :: hi, he, B0, q, alpha, a, b, c, d
     real(kr) :: slope1,slope2,slope
     real(kr) :: arrayout(1:nbrElem)
             
@@ -91,8 +92,13 @@ SUBROUTINE write_initial_condition_gmsh()
     
     arrayout = 0.d00
     
+    hi = 0.75d0
+    he = 1.163235d0
+    B0 = 2.0d00
+    q  = 4.0d00
+    
     DO i=1,nbrElem
-        hleft = 1.15d0
+        hleft = he
         arrayout(i) = hleft         
     ENDDO
     
@@ -111,7 +117,20 @@ SUBROUTINE write_initial_condition_gmsh()
     write(10,'(T1,I9)') nbrElem
     
     do i=1,nbrElem
-        U = 4.0d0 / 1.15d0
+!        U = q / hi
+
+        ye = (node(elem(i,1),2)+node(elem(i,2),2)+node(elem(i,3),2) ) /3.d0
+        ! Quadratic
+!        U = -6.d00 * q * ye * ( ye - B0 ) / ( hi * B0 * B0 )
+        
+        ! Fourth order
+        alpha = -75.d00
+        a = 5.d00 * (B0*q/hi + alpha*B0*B0*B0/12.d00)/(B0**5)
+        b = -2.d00 * a *B0
+        c = 0.5d00 * alpha
+        d = a*B0**3 - 0.5d00*alpha*B0
+        U = a*ye**4 + b*ye**3 + c*ye**2 + d*ye
+        
         V = 0.d0    
         write(10,'(T1,I9,2ES24.16E2,F4.1)') i+nbrFront, U, V, 0.
     end do
@@ -142,7 +161,7 @@ SUBROUTINE write_initial_condition_gmsh()
       
       xe =  (node(elem(i,1),1)+node(elem(i,2),1)+node(elem(i,3),1) ) /3.d0
       
-      IF (xe .LE. (xMax*0.5d00)) THEN ! Steep
+      IF (xe .LE. (xMax*1.5d00)) THEN ! Steep
         hleft = hright
         slope = slope1
         arrayout(i) = hleft - slope*(xe-xMin)
@@ -168,8 +187,8 @@ SUBROUTINE write_initial_condition_gmsh()
     write(10,'(T1,I9)') nbrFront
     
     do i=1,nbrFront
-        h_inlet = 1.15d0
-        h_outlet = 1.15d0
+        h_inlet = hi
+        h_outlet = 1.163235d0
         IF ( front(i,3).eq.1 ) THEN
         ! Inlet 
             write(10,'(T1,I9,2X,ES24.16E2)') i, h_inlet
@@ -196,7 +215,20 @@ SUBROUTINE write_initial_condition_gmsh()
     write(10,'(T1,I9)') nbrFront
     
     do i=1,nbrFront
-        u_inlet = 4.d0 / 1.15d0
+!        u_inlet = q / hi
+
+        ye = 0.5d00 * ( node( front(i,1) ,2) + node( front(i,2) ,2) )
+        ! Quadratic
+!        u_inlet = -6.d00 * q * ye * ( ye - B0 ) / ( hi * B0 * B0 )
+        
+        ! Fourth order
+        alpha = -75.d00
+        a = 5.d00 * (B0*q/hi + alpha*B0*B0*B0/12.d00)/(B0**5)
+        b = -2.d00 * a *B0
+        c = 0.5d00 * alpha
+        d = a*B0**3 - 0.5d00*alpha*B0
+        u_inlet = a*ye**4 + b*ye**3 + c*ye**2 + d*ye
+        
         v_inlet = 0.d0
         IF ( front(i,3).eq.1 ) THEN
         ! Inlet 

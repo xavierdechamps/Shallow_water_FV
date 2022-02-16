@@ -60,8 +60,9 @@ SUBROUTINE write_initial_condition_gmsh()
 
     integer(ki) :: ierr, i, wall_type, edge_id
     real(kr) :: h, hleft,hright, u, v, h_inlet, u_inlet, v_inlet, h_outlet
-    real(kr) :: xMax,xMin,xCenter,circleRadius, circleShiftY, x1, x2, xe
-    real(kr) :: slope
+    real(kr) :: xMax,xMin,xCenter,circleRadius, circleShiftY, x1, x2, xe, ye
+    real(kr) :: hi, he, B0, q, alpha, a, b, c, d, xm
+    real(kr) :: slope1,slope2,slope
     real(kr) :: arrayout(1:nbrElem)
             
     open(unit=10,file=file_gmsh,status="replace",iostat=ierr,form='formatted')
@@ -91,8 +92,13 @@ SUBROUTINE write_initial_condition_gmsh()
     
     arrayout = 0.d00
     
+    hi = 1.15d0
+    he = 1.163235d0
+    B0 = 2.0d00
+    q  = 4.0d00
+    
     DO i=1,nbrElem
-        hleft = 1.15d0
+        hleft = hi
         arrayout(i) = hleft         
     ENDDO
     
@@ -111,7 +117,23 @@ SUBROUTINE write_initial_condition_gmsh()
     write(10,'(T1,I9)') nbrElem
     
     do i=1,nbrElem
-        U = 4.0d0 / 1.15d0
+        ! Uniform velocity profile
+        U = q / hi
+	
+	! Y-coordinate of the cell center
+!        ye = (node(elem(i,1),2)+node(elem(i,2),2)+node(elem(i,3),2) ) / 3.d0
+
+        ! Quadratic velocity profile
+!        U = -6.d00 * q * ye * ( ye - B0 ) / ( hi * B0 * B0 )
+        
+        ! Fourth order velocity profile
+!        alpha = -75.d00
+!        a = 5.d00 * (B0*q/hi + alpha*B0*B0*B0/12.d00)/(B0**5)
+!        b = -2.d00 * a *B0
+!        c = 0.5d00 * alpha
+!        d = a*B0**3 - 0.5d00*alpha*B0
+!        U = a*ye**4 + b*ye**3 + c*ye**2 + d*ye
+        
         V = 0.d0    
         write(10,'(T1,I9,2ES24.16E2,F4.1)') i+nbrFront, U, V, 0.
     end do
@@ -134,16 +156,29 @@ SUBROUTINE write_initial_condition_gmsh()
 ! Linear slope
     xMax = maxval(node(:,1) )
     xMin = minval(node(:,1) )
-    hleft = 2.0d0
-    slope = 0.002d0 ! = Dy / Dx
-            
+    hright = 2.0d0
+    slope1 = 0.002d0   ! Slope in the first section of the channel
+    slope2 = 0.0005d0  ! Slope in the second section of the channel
+    
     DO i=1,nbrElem
       
+      ! X-coordinate of the center of the cell
       xe =  (node(elem(i,1),1)+node(elem(i,2),1)+node(elem(i,3),1) ) /3.d0
       
-      ! Linear slope
-      arrayout(i) = hleft - slope*(xe-xMin)
+      ! X-coordinate where the slope changes from slope1 to slope2
+      xm = xMax*1.5d00
       
+      IF (xe .LE. xm) THEN ! Steep
+      ! First section of the channel
+        hleft = hright
+        slope = slope1
+        arrayout(i) = hleft - slope*(xe-xMin)
+      ELSE                          ! Mild
+      ! Second section of the channel
+        slope = slope2
+        hleft = hright - slope1*xm
+        arrayout(i) = hleft - slope*(xe-xMin-xm)     
+      ENDIF      
     ENDDO
     
     write(10,'(T1,I9,ES24.16E2)') (i+nbrFront, arrayout(i),i=1,nbrElem)
@@ -161,8 +196,8 @@ SUBROUTINE write_initial_condition_gmsh()
     write(10,'(T1,I9)') nbrFront
     
     do i=1,nbrFront
-        h_inlet = 1.15d0
-        h_outlet = 1.15d0
+        h_inlet = hi
+        h_outlet = hi
         IF ( front(i,3).eq.1 ) THEN
         ! Inlet 
             write(10,'(T1,I9,2X,ES24.16E2)') i, h_inlet
@@ -189,7 +224,23 @@ SUBROUTINE write_initial_condition_gmsh()
     write(10,'(T1,I9)') nbrFront
     
     do i=1,nbrFront
-        u_inlet = 4.d0 / 1.15d0
+        ! Uniform velocity profile
+        u_inlet = q / hi
+
+        ! Y-coordinate of the edge center
+!        ye = 0.5d00 * ( node( front(i,1) ,2) + node( front(i,2) ,2) )
+
+        ! Quadratic velocity profile
+!        u_inlet = -6.d00 * q * ye * ( ye - B0 ) / ( hi * B0 * B0 )
+        
+        ! Fourth order velocity profile
+!        alpha = -75.d00
+!        a = 5.d00 * (B0*q/hi + alpha*B0*B0*B0/12.d00)/(B0**5)
+!        b = -2.d00 * a *B0
+!        c = 0.5d00 * alpha
+!        d = a*B0**3 - 0.5d00*alpha*B0
+!        u_inlet = a*ye**4 + b*ye**3 + c*ye**2 + d*ye
+        
         v_inlet = 0.d0
         IF ( front(i,3).eq.1 ) THEN
         ! Inlet 

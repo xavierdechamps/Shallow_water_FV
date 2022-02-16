@@ -218,7 +218,7 @@ SUBROUTINE getUpwind_and_Source(qL,qR,qAvg,n,Fout,source_f,source_s,Hi,Hj,dij,is
     ! Local parameters
     REAL(kr), DIMENSION(1:nbvar,1:nbvar) :: Qmat,sourceMat
     REAL(kr), DIMENSION(1:nbvar)         :: qLloc, qRloc,tmp
-    REAL(kr)                             :: tempval
+    REAL(kr)                             :: tempval, locdist
     
     source_f = zero
     source_s = zero
@@ -246,13 +246,21 @@ SUBROUTINE getUpwind_and_Source(qL,qR,qAvg,n,Fout,source_f,source_s,Hi,Hj,dij,is
     
     ! Friction slope x: -g h n^2 u(u^2 + v^2)^(1/2) / h^(4/3)
     !                y: -g h n^2 v(u^2 + v^2)^(1/2) / h^(4/3)
-    source_f(2) = - ggrav * QL(1) * manning_b*manning_b * QL(2) * sqrt(ql(2)**2 + qR(2)**2) / (QL(1)**(4.d00/3.d00))
-    source_f(3) = - ggrav * QL(1) * manning_b*manning_b * QL(3) * sqrt(ql(2)**2 + qR(2)**2) / (QL(1)**(4.d00/3.d00))
-    
+    tempval = - ggrav * QL(1) * sqrt(ql(2)**2 + qR(2)**2)
+    locdist = (manning_b)**(1.5D00) / QL(1) 
     IF (iswall) THEN
-      source_f(2) = source_f(2) - ggrav * QL(1) * manning_w*manning_w * QL(2) * sqrt(ql(2)**2 + qR(2)**2) / ((omega/ds)**(4.d00/3.d00))
-      source_f(3) = source_f(3) - ggrav * QL(1) * manning_w*manning_w * QL(3) * sqrt(ql(2)**2 + qR(2)**2) / ((omega/ds)**(4.d00/3.d00))
+      locdist = locdist + (manning_w)**(1.5D0) * ds / omega
     ENDIF
+    source_f(2) = tempval * QL(2) * ( locdist**(4.D00 / 3.D00) )
+    source_f(3) = tempval * QL(3) * ( locdist**(4.D00 / 3.D00) )
+    
+    ! source_f(2) = - ggrav * QL(1) * manning_b*manning_b * QL(2) * sqrt(ql(2)**2 + qR(2)**2) / (QL(1)**(4.d00/3.d00))
+    ! source_f(3) = - ggrav * QL(1) * manning_b*manning_b * QL(3) * sqrt(ql(2)**2 + qR(2)**2) / (QL(1)**(4.d00/3.d00))
+    
+    ! IF (iswall) THEN
+      ! source_f(2) = source_f(2) - ggrav * QL(1) * manning_w*manning_w * QL(2) * sqrt(ql(2)**2 + qR(2)**2) / ((omega/ds)**(4.d00/3.d00))
+      ! source_f(3) = source_f(3) - ggrav * QL(1) * manning_w*manning_w * QL(3) * sqrt(ql(2)**2 + qR(2)**2) / ((omega/ds)**(4.d00/3.d00))
+    ! ENDIF
     
 END SUBROUTINE getUpwind_and_Source
 
