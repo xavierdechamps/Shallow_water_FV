@@ -21,7 +21,7 @@ SUBROUTINE find_elem_front(elem_front,elem_surf)
     
     ! Find all the elements that contain the first node node1 and store them in temp
     DO i=1,nbrElem
-      IF ((elem(i,1).eq.node1).or.(elem(i,2).eq.node1) .or. (elem(i,3).eq.node1)) then
+      IF ((elem(i,1).eq.node1).or.(elem(i,2).eq.node1) .or. (elem(i,3).eq.node1) .or. (elem(i,4).eq.node1)) then
         ind = ind + 1
         temp(ind) = i
       END IF
@@ -29,7 +29,7 @@ SUBROUTINE find_elem_front(elem_front,elem_surf)
     
     ! Among the previously found elements, find the boundary 2D element that contains the second node
     DO i=1,ind
-      IF ((elem(temp(i),1)==node2) .or. (elem(temp(i),2)==node2) .or. (elem(temp(i),3)==node2)) then
+      IF ((elem(temp(i),1)==node2) .or. (elem(temp(i),2)==node2) .or. (elem(temp(i),3)==node2) .or. (elem(temp(i),4)==node2)) then
         elem_surf = temp(i)
         EXIT
       END IF
@@ -59,7 +59,7 @@ SUBROUTINE find_elem_surf(elem_cur,elem_surf,node1,node2)
 
     ! Find all the elements that contain the first node node1 and store them in temp
     DO i=1,nbrElem
-      IF ((elem(i,1).eq.node1).or.(elem(i,2).eq.node1) .or. (elem(i,3).eq.node1)) THEN
+      IF ((elem(i,1).eq.node1).or.(elem(i,2).eq.node1) .or. (elem(i,3).eq.node1) .or. (elem(i,4).eq.node1)) THEN
         ind = ind + 1
         temp(ind) = i
       END IF
@@ -67,7 +67,7 @@ SUBROUTINE find_elem_surf(elem_cur,elem_surf,node1,node2)
 
     ! Among the previously found elements, find the 2D elements that contains the second node
     DO i=1,ind
-      IF ((elem(temp(i),1)==node2) .or. (elem(temp(i),2)==node2) .or. (elem(temp(i),3)==node2)) THEN
+      IF ((elem(temp(i),1)==node2) .or. (elem(temp(i),2)==node2) .or. (elem(temp(i),3)==node2) .or. (elem(temp(i),4)==node2)) THEN
         ind2 = ind2 + 1
         temp2(ind2) = temp(i)
       END IF
@@ -127,18 +127,18 @@ SUBROUTINE find_mat(mat,element,ind,pos)
     IMPLICIT NONE
 
     ! Subroutine parameters
-    INTEGER(ki), DIMENSION(3*nbrElem,2), INTENT(IN) :: mat
+    INTEGER(ki), DIMENSION(4*nbrElem,2), INTENT(IN) :: mat
     INTEGER(ki), INTENT(IN) :: element
     INTEGER(ki), INTENT(OUT) :: ind
-    INTEGER(ki), DIMENSION(3), INTENT(OUT) :: pos
+    INTEGER(ki), DIMENSION(4), INTENT(OUT) :: pos
     
     ! Local parameters
     INTEGER(ki) :: i
     
     ind = 0 ! number of times that element appears in mat
-    pos = (/0,0,0/)
+    pos = (/0,0,0,0/)
 
-    DO i=1,3*nbrElem
+    DO i=1,4*nbrElem
        IF ((mat(i,1).eq.element).or.(mat(i,2).eq.element)) THEN
           ind = ind + 1
           pos(ind) = i

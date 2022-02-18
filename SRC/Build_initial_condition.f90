@@ -24,19 +24,20 @@ PROGRAM BUILD_INITIAL_SOLUTION
     CALL get_command_argument(2,file_gmsh)
     
     ! Browse the mesh to get the size of the arrays
-    CALL browse_gmsh(mesh_file,length_names,nbrNodes,nbrElem,nbrFront,ok)
+    CALL browse_gmsh(mesh_file,length_names,nbrNodes,nbrElem,nbrTris,nbrQuads,nbrFront,ok)
     IF (ok == 0) THEN
       WRITE(*,*) "The program hasn't started because of a problem during the browsing of the mesh"
       GOTO 200
     endif
     
     ! Allocate the memory for the arrays
-    CALL mem_allocate(node,front,elem,U0,depth,BoundCond,dt,Source,&
+    CALL mem_allocate(node,front,elem,nbr_nodes_per_elem,U0,depth,BoundCond,dt,Source,&
 &                     edges,fnormal,geom_data,cell_data_n,edges_ind,fnormal_ind,&
 &                     nbvar*nbrElem,nbrNodes,nbrElem,nbrFront,nbrInt,0)
 
     ! Read the mesh and the initial solution / boundary conditions
-    CALL read_gmsh(U0,nbvar*nbrElem,mesh_file,length_names,node,elem,front,depth,BoundCond,nbrNodes,nbrElem,nbrFront,0,ok)
+    CALL read_gmsh(U0,nbvar*nbrElem,mesh_file,length_names,node,elem,nbr_nodes_per_elem,front,&
+&                  depth,BoundCond,nbrNodes,nbrElem,nbrTris,nbrQuads,nbrFront,0,ok)
     IF (ok == 0) THEN
       WRITE(*,*) "The program hasn't started because of a problem during the reading of the mesh"
       GOTO 200
@@ -45,7 +46,7 @@ PROGRAM BUILD_INITIAL_SOLUTION
     ENDIF
     
     ! Deallocate the memory for the arrays
-    CALL mem_deallocate(node,front,elem,U0,depth,BoundCond,dt,Source,&
+    CALL mem_deallocate(node,front,elem,nbr_nodes_per_elem,U0,depth,BoundCond,dt,Source,&
 &                       edges,fnormal,geom_data,cell_data_n,edges_ind,fnormal_ind)
     
 200 CONTINUE
@@ -75,8 +76,9 @@ SUBROUTINE write_initial_condition_gmsh()
     write(10,'(T1,A9)') "$EndNodes"
     write(10,'(T1,A9)') "$Elements"
     write(10,'(T1,I9)') nbrElem+nbrFront
-    write(10,'(T1,I9,2I2,I9,I2,2I9)') (i,1,2,front(i,3),1,front(i,1:2),i=1,nbrFront)    
-    write(10,'(T1,I9,2I2,I9,I2,3I9)') (i+nbrFront,2,2,elem(i,4),1,elem(i,1:3),i=1,nbrElem)
+    write(10,'(T1,I9,2I2,I9,I2,2I9)') (i,1,2,front(i,3),1,front(i,1:2),i=1,nbrFront)
+    IF (nbrTris.NE.0) write(10,'(T1,I9,2I2,I9,I2,3I9)') (i+nbrFront,2,2,elem(i,5),1,elem(i,1:3),i=1,nbrTris)
+    IF (nbrQuads.NE.0) write(10,'(T1,I9,2I2,I9,I2,4I9)') (i+nbrFront+nbrTris,3,2,elem(i+nbrTris,5),1,elem(i+nbrTris,1:4),i=1,nbrQuads)
     write(10,'(T1,A12)') "$EndElements"
 
     !************************************* INITIAL HEIGHT
@@ -98,7 +100,7 @@ SUBROUTINE write_initial_condition_gmsh()
     q  = 4.0d00
     
     DO i=1,nbrElem
-        hleft = he
+        hleft = hi
         arrayout(i) = hleft         
     ENDDO
     
@@ -117,19 +119,26 @@ SUBROUTINE write_initial_condition_gmsh()
     write(10,'(T1,I9)') nbrElem
     
     do i=1,nbrElem
-!        U = q / hi
+        U = q / hi
 
-        ye = (node(elem(i,1),2)+node(elem(i,2),2)+node(elem(i,3),2) ) /3.d0
+        ! if ( nbr_nodes_per_elem(i).EQ.3 ) THEN
+          ! ye = (node(elem(i,1),2)+node(elem(i,2),2)+node(elem(i,3),2) ) /3.d0
+        ! elseif ( nbr_nodes_per_elem(i).EQ.4 ) THEN
+          ! ye = (node(elem(i,1),2)+node(elem(i,2),2)+node(elem(i,3),2)+node(elem(i,4),2) ) /4.d0
+        ! else
+          ! write(*,*) "----- Initial velocity, the number of nodes per element is incorrect ",i
+        ! endif
+        
         ! Quadratic
 !        U = -6.d00 * q * ye * ( ye - B0 ) / ( hi * B0 * B0 )
         
         ! Fourth order
-        alpha = -75.d00
-        a = 5.d00 * (B0*q/hi + alpha*B0*B0*B0/12.d00)/(B0**5)
-        b = -2.d00 * a *B0
-        c = 0.5d00 * alpha
-        d = a*B0**3 - 0.5d00*alpha*B0
-        U = a*ye**4 + b*ye**3 + c*ye**2 + d*ye
+        ! alpha = -75.d00
+        ! a = 5.d00 * (B0*q/hi + alpha*B0*B0*B0/12.d00)/(B0**5)
+        ! b = -2.d00 * a *B0
+        ! c = 0.5d00 * alpha
+        ! d = a*B0**3 - 0.5d00*alpha*B0
+        ! U = a*ye**4 + b*ye**3 + c*ye**2 + d*ye
         
         V = 0.d0    
         write(10,'(T1,I9,2ES24.16E2,F4.1)') i+nbrFront, U, V, 0.
@@ -154,13 +163,19 @@ SUBROUTINE write_initial_condition_gmsh()
     xMax = maxval(node(:,1) )
     xMin = minval(node(:,1) )
     hright = 2.0d0
-    slope1 = 0.002d0
+    slope1 = 0.000d0
     slope2 = 0.0005d0
     
     DO i=1,nbrElem
       
-      xe =  (node(elem(i,1),1)+node(elem(i,2),1)+node(elem(i,3),1) ) /3.d0
-      
+      if ( nbr_nodes_per_elem(i).EQ.3 ) THEN
+        xe =  (node(elem(i,1),1)+node(elem(i,2),1)+node(elem(i,3),1) ) /3.d0
+      elseif ( nbr_nodes_per_elem(i).EQ.4 ) THEN
+        xe =  (node(elem(i,1),1)+node(elem(i,2),1)+node(elem(i,3),1)+node(elem(i,4),1) ) /4.d0
+      else
+        write(*,*) "----- Bathymetric depth, the number of nodes per element is incorrect ",i
+      endif
+        
       IF (xe .LE. (xMax*1.5d00)) THEN ! Steep
         hleft = hright
         slope = slope1
@@ -187,8 +202,8 @@ SUBROUTINE write_initial_condition_gmsh()
     write(10,'(T1,I9)') nbrFront
     
     do i=1,nbrFront
-        h_inlet = hi
-        h_outlet = 1.163235d0
+        h_inlet = he
+        h_outlet = he
         IF ( front(i,3).eq.1 ) THEN
         ! Inlet 
             write(10,'(T1,I9,2X,ES24.16E2)') i, h_inlet
@@ -215,19 +230,20 @@ SUBROUTINE write_initial_condition_gmsh()
     write(10,'(T1,I9)') nbrFront
     
     do i=1,nbrFront
-!        u_inlet = q / hi
+       u_inlet = q / hi
 
-        ye = 0.5d00 * ( node( front(i,1) ,2) + node( front(i,2) ,2) )
+        ! ye = 0.5d00 * ( node( front(i,1) ,2) + node( front(i,2) ,2) )
+        
         ! Quadratic
 !        u_inlet = -6.d00 * q * ye * ( ye - B0 ) / ( hi * B0 * B0 )
         
         ! Fourth order
-        alpha = -75.d00
-        a = 5.d00 * (B0*q/hi + alpha*B0*B0*B0/12.d00)/(B0**5)
-        b = -2.d00 * a *B0
-        c = 0.5d00 * alpha
-        d = a*B0**3 - 0.5d00*alpha*B0
-        u_inlet = a*ye**4 + b*ye**3 + c*ye**2 + d*ye
+        ! alpha = -75.d00
+        ! a = 5.d00 * (B0*q/hi + alpha*B0*B0*B0/12.d00)/(B0**5)
+        ! b = -2.d00 * a *B0
+        ! c = 0.5d00 * alpha
+        ! d = a*B0**3 - 0.5d00*alpha*B0
+        ! u_inlet = a*ye**4 + b*ye**3 + c*ye**2 + d*ye
         
         v_inlet = 0.d0
         IF ( front(i,3).eq.1 ) THEN

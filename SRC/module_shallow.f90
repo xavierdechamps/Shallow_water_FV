@@ -23,15 +23,16 @@ MODULE module_shallow
     REAL(kr), ALLOCATABLE :: cell_data_n(:,:) ! see get_normal_to_cell
     REAL(kr), ALLOCATABLE :: BoundCond(:,:)   ! Imposed boundary conditions ( boundary_edge , hBC , uBC , vBC)
     
-    INTEGER(ki), ALLOCATABLE :: front(:,:)      ! see read_gmsh
-    INTEGER(ki), ALLOCATABLE :: elem(:,:)       ! see read_gmsh
+    INTEGER(ki), ALLOCATABLE :: front(:,:)            ! see read_gmsh
+    INTEGER(ki), ALLOCATABLE :: elem(:,:)             ! see read_gmsh
+    INTEGER(ki), ALLOCATABLE :: nbr_nodes_per_elem(:) ! see read_gmsh
     INTEGER(ki), ALLOCATABLE :: edges_ind(:,:)  ! see get_normal_to_cell
     INTEGER(ki), ALLOCATABLE :: fnormal_ind(:,:)! see get_normal_to_cell
     
     INTEGER(ki), PARAMETER :: length_names = 40
     CHARACTER(LEN=length_names) :: mesh_file, file_restart, file_gmsh, file_dat
     
-    INTEGER(ki) :: nbrNodes, nbrElem, nbrFront, nbrInt, nbrBC
+    INTEGER(ki) :: nbrNodes, nbrElem, nbrTris, nbrQuads, nbrFront, nbrInt, nbrBC
     INTEGER(ki) :: nTime, shownTime, savenTime
     INTEGER(ki) :: time_begin, time_end
     INTEGER(ki), DIMENSION(2,5) :: CLTable
@@ -48,7 +49,7 @@ MODULE module_mem_allocate
 ! -----------------------
 ! Subroutine mem_allocate
 ! -----------------------
-  SUBROUTINE mem_allocate(node,front,elem,U0,depth,BoundCond,dt,Source,&
+  SUBROUTINE mem_allocate(node,front,elem,nbr_nodes_per_elem,U0,depth,BoundCond,dt,Source,&
 &                         edges,fnormal,geom_data,cell_data_n,edges_ind,fnormal_ind,&
 &                         lengU0,nbrNodes,nbrElem,nbrFront,nbrInt,only_mesh)
     USE module_shallow, only : kr,ki,nbvar
@@ -60,6 +61,7 @@ MODULE module_mem_allocate
     REAL(kr), ALLOCATABLE    :: BoundCond(:,:)
     INTEGER(ki), ALLOCATABLE    :: elem(:,:)
     INTEGER(ki), ALLOCATABLE    :: front(:,:)
+    INTEGER(ki), ALLOCATABLE    :: nbr_nodes_per_elem(:)
     
     REAL(kr), ALLOCATABLE :: Source(:)
     REAL(kr), ALLOCATABLE :: dt(:)
@@ -78,7 +80,7 @@ MODULE module_mem_allocate
 ! -------------------------
 ! Subroutine mem_deallocate
 ! -------------------------
-  SUBROUTINE mem_deallocate(node,front,elem,U0,depth,BoundCond,dt,Source,&
+  SUBROUTINE mem_deallocate(node,front,elem,nbr_nodes_per_elem,U0,depth,BoundCond,dt,Source,&
 &                       edges,fnormal,geom_data,cell_data_n,edges_ind,fnormal_ind)
     USE module_shallow, only : kr,ki
     IMPLICIT NONE
@@ -89,6 +91,7 @@ MODULE module_mem_allocate
     REAL(kr), ALLOCATABLE    :: BoundCond(:,:)
     INTEGER(ki), ALLOCATABLE    :: elem(:,:)
     INTEGER(ki), ALLOCATABLE    :: front(:,:)
+    INTEGER(ki), ALLOCATABLE    :: nbr_nodes_per_elem(:)
     
     REAL(kr), ALLOCATABLE :: Source(:)
     REAL(kr), ALLOCATABLE :: dt(:)

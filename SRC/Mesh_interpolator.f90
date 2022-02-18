@@ -12,9 +12,10 @@ PROGRAM MESH_INTERPOLATOR
     REAL(kr), ALLOCATABLE    :: BoundCond_new(:,:)
     INTEGER(ki), ALLOCATABLE    :: elem_new(:,:)
     INTEGER(ki), ALLOCATABLE    :: front_new(:,:)
+    INTEGER(ki), ALLOCATABLE    :: nbr_nodes_per_elem_new(:)
     REAL(kr)    :: x1,x2,x3,y1,y2,y3,xc,yc
     REAL(kr)    :: cross1,cross2,cross3
-    INTEGER(ki) :: nbrNodes_new,nbrElem_new,nbrFront_new,nbrInt_new
+    INTEGER(ki) :: nbrNodes_new,nbrElem_new,nbrTris_new,nbrQuads_new,nbrFront_new,nbrInt_new
     
     ! Get the number of arguments
     IF(COMMAND_ARGUMENT_COUNT().NE.4)THEN
@@ -33,34 +34,34 @@ PROGRAM MESH_INTERPOLATOR
     write(*,*) sol_output
         
     ! Browse the old/new mesh to get the size of the arrays
-    CALL browse_gmsh(mesh_old,length_names,nbrNodes,nbrElem,nbrFront,ok)
+    CALL browse_gmsh(mesh_old,length_names,nbrNodes,nbrElem,nbrTris,nbrQuads,nbrFront,ok)
     IF (ok == 0) THEN
-      WRITE(*,*) "The program hasn't started because of a problem during the browsing of the mesh"
+      WRITE(*,*) "The program hasn't started because of a problem during the browsing of the old mesh"
       GOTO 200
     endif
-    CALL browse_gmsh(mesh_new,length_names,nbrNodes_new,nbrElem_new,nbrFront_new,ok)
+    CALL browse_gmsh(mesh_new,length_names,nbrNodes_new,nbrElem_new,nbrTris_new,nbrQuads_new,nbrFront_new,ok)
     IF (ok == 0) THEN
-      WRITE(*,*) "The program hasn't started because of a problem during the browsing of the mesh"
+      WRITE(*,*) "The program hasn't started because of a problem during the browsing of the new mesh"
       GOTO 200
     endif
     
     ! Allocate the memory for the arrays
-    CALL mem_allocate(node,front,elem,U0,depth,BoundCond,dt,Source,&
+    CALL mem_allocate(node,front,elem,nbr_nodes_per_elem,U0,depth,BoundCond,dt,Source,&
 &                     edges,fnormal,geom_data,cell_data_n,edges_ind,fnormal_ind,&
 &                     nbvar*nbrElem,nbrNodes,nbrElem,nbrFront,nbrInt,1)
-    CALL mem_allocate(node_new,front_new,elem_new,U0_new,depth_new,BoundCond_new,dt,Source,&
+    CALL mem_allocate(node_new,front_new,elem_new,nbr_nodes_per_elem_new,U0_new,depth_new,BoundCond_new,dt,Source,&
 &                     edges,fnormal,geom_data,cell_data_n,edges_ind,fnormal_ind, &
 &                     nbvar*nbrElem_new,nbrNodes_new,nbrElem_new,nbrFront_new,nbrInt_new,1)
 
     ! Read the mesh and the initial solution / boundary conditions
-    CALL read_gmsh(U0,nbvar*nbrElem,mesh_old,length_names,node,elem,front,depth,BoundCond, &
-    &              nbrNodes,nbrElem,nbrFront,1,ok)
+    CALL read_gmsh(U0,nbvar*nbrElem,mesh_old,length_names,node,elem,nbr_nodes_per_elem,front,&
+&                 depth,BoundCond,nbrNodes,nbrElem,nbrTris,nbrQuads,nbrFront,1,ok)
     IF (ok == 0) THEN
       WRITE(*,*) "The program hasn't started because of a problem during the reading of the mesh"
       GOTO 200
     ENDIF
-    CALL read_gmsh(U0_new,nbvar*nbrElem_new,mesh_new,length_names,node_new,elem_new,front_new,depth_new,BoundCond_new,&
-    &              nbrNodes_new,nbrElem_new,nbrFront_new,1,ok)
+    CALL read_gmsh(U0_new,nbvar*nbrElem_new,mesh_new,length_names,node_new,elem_new,nbr_nodes_per_elem_new,front_new,&
+&                  depth_new,BoundCond_new,nbrNodes_new,nbrElem_new,nbrTris_new,nbrQuads_new,nbrFront_new,1,ok)
     IF (ok == 0) THEN
       WRITE(*,*) "The program hasn't started because of a problem during the reading of the mesh"
       GOTO 200
@@ -124,11 +125,13 @@ PROGRAM MESH_INTERPOLATOR
     ENDDO
     
     ! Save the solution in the .mesh and .dat formats
-    ! CALL write_gmsh(U0_new,nbvar*nbrElem_new,"test_new.msh",length_names,node_new,elem_new,front_new,nbrNodes_new,nbrElem_new,nbrFront_new,0,0)
+    ! CALL write_gmsh(U0_new,nbvar*nbrElem_new,"test_new.msh",length_names,node_new,elem_new,front_new,nbrNodes_new,nbrElem_new,nbrTris_new,nbrQuads_new,nbrFront_new,0,0)
     CALL write_solution(U0_new,nbvar*nbrElem_new,sol_output,length_names,ok)
     
     ! Deallocate the memory for the arrays
-    CALL mem_deallocate(node,front,elem,U0,depth,BoundCond,dt,Source,&
+    CALL mem_deallocate(node,front,elem,nbr_nodes_per_elem,U0,depth,BoundCond,dt,Source,&
+&                       edges,fnormal,geom_data,cell_data_n,edges_ind,fnormal_ind)
+    CALL mem_deallocate(node_new,front_new,elem_new,nbr_nodes_per_elem_new,U0_new,depth_new,BoundCond_new,dt,Source,&
 &                       edges,fnormal,geom_data,cell_data_n,edges_ind,fnormal_ind)
     
 200 CONTINUE
