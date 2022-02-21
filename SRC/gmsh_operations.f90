@@ -114,12 +114,9 @@ SUBROUTINE write_gmsh(U0,lengU0,file_gmsh,lengch,node,elem,front,nbrNodes,nbrEle
        WRITE(10,'(T1,A9)') "$EndNodes"
        WRITE(10,'(T1,A9)') "$Elements"
        WRITE(10,'(T1,I9)') nbrElem+nbrFront
-       WRITE(10,'(T1,I9,2I2,I9,I2,2I9)') (i,1,2,front(i,3),1,front(i,1:2),i=1,nbrFront)
-       ! WRITE(10,'(T1,I9,2I2,I9,I2,3I9)') (i+nbrFront,2,2,elem(i,4),1,elem(i,1:3),i=1,nbrElem)
-       
-    IF (nbrTris.NE.0) write(10,'(T1,I9,2I2,I9,I2,3I9)') (i+nbrFront,2,2,elem(i,5),1,elem(i,1:3),i=1,nbrTris)
-    IF (nbrQuads.NE.0) write(10,'(T1,I9,2I2,I9,I2,4I9)') (i+nbrFront+nbrTris,3,2,elem(i+nbrTris,5),1,elem(i+nbrTris,1:4),i=1,nbrQuads)
-    
+       WRITE(10,'(T1,I9,2I2,I9,I2,2I9)') (i,1,2,front(i,3),1,front(i,1:2),i=1,nbrFront)       
+       IF (nbrTris.NE.0) write(10,'(T1,I9,2I2,I9,I2,3I9)') (i+nbrFront,2,2,elem(i,5),1,elem(i,1:3),i=1,nbrTris)
+       IF (nbrQuads.NE.0) write(10,'(T1,I9,2I2,I9,I2,4I9)') (i+nbrFront+nbrTris,3,2,elem(i+nbrTris,5),1,elem(i+nbrTris,1:4),i=1,nbrQuads)
        WRITE(10,'(T1,A12)') "$EndElements"
     ELSE
        OPEN(UNIT=10,FILE=file_gmsh,STATUS="old",ACCESS="append",IOSTAT=ierr,FORM='formatted')
@@ -173,7 +170,7 @@ SUBROUTINE write_gmsh(U0,lengU0,file_gmsh,lengch,node,elem,front,nbrNodes,nbrEle
     WRITE(10,'(T1,I9)') nbrElem
     WRITE(10,'(T1,I9,ES25.16E3)') (i+nbrFront, Froude(i),i=1,nbrElem)
     WRITE(10,'(T1,A15)') "$EndElementData"
-        
+    
     !*************************************
     ! WRITE(10,'(T1,A12)') "$ElementData"
     ! WRITE(10,'(T1,A1)') "1"
@@ -508,17 +505,6 @@ SUBROUTINE browse_gmsh(mesh_file,lengch,nbrNodes,nbrElem,nbrTris,nbrQuads,nbrFro
       END IF
     END DO
     nbrElem = nbrTris + nbrQuads
-    
-    ! READ(10,*) a,i
-    ! DO WHILE (i/=2) ! First loop to calculate the number of edges+nodes
-      ! IF (i==1) THEN
-        ! nbrFront = nbrFront + 1
-      ! ELSE IF (i==15) THEN
-        ! nbrNodeEdge = nbrNodeEdge + 1
-      ! END IF
-      ! READ(10,*) a,i
-    ! END DO
-    ! nbrElem = nbrElemTot - nbrFront - nbrNodeEdge
 
 100 CLOSE(UNIT=10)
     

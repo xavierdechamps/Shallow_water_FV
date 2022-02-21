@@ -94,7 +94,7 @@ SUBROUTINE write_initial_condition_gmsh()
     
     arrayout = 0.d00
     
-    hi = 0.75d0
+    hi = 1.0d0
     he = 1.163235d0
     B0 = 2.0d00
     q  = 4.0d00
@@ -119,7 +119,8 @@ SUBROUTINE write_initial_condition_gmsh()
     write(10,'(T1,I9)') nbrElem
     
     do i=1,nbrElem
-        U = q / hi
+        U = 2.7d0 * sqrt(9.81d0 * hi)
+        ! U = q / hi
 
         ! if ( nbr_nodes_per_elem(i).EQ.3 ) THEN
           ! ye = (node(elem(i,1),2)+node(elem(i,2),2)+node(elem(i,3),2) ) /3.d0
@@ -160,32 +161,32 @@ SUBROUTINE write_initial_condition_gmsh()
     arrayout = 0.d00
     
 ! Linear slope
-    xMax = maxval(node(:,1) )
-    xMin = minval(node(:,1) )
-    hright = 2.0d0
-    slope1 = 0.000d0
-    slope2 = 0.0005d0
+    ! xMax = maxval(node(:,1) )
+    ! xMin = minval(node(:,1) )
+    ! hright = 2.0d0
+    ! slope1 = 0.000d0
+    ! slope2 = 0.0005d0
     
-    DO i=1,nbrElem
+    ! DO i=1,nbrElem
       
-      if ( nbr_nodes_per_elem(i).EQ.3 ) THEN
-        xe =  (node(elem(i,1),1)+node(elem(i,2),1)+node(elem(i,3),1) ) /3.d0
-      elseif ( nbr_nodes_per_elem(i).EQ.4 ) THEN
-        xe =  (node(elem(i,1),1)+node(elem(i,2),1)+node(elem(i,3),1)+node(elem(i,4),1) ) /4.d0
-      else
-        write(*,*) "----- Bathymetric depth, the number of nodes per element is incorrect ",i
-      endif
+      ! if ( nbr_nodes_per_elem(i).EQ.3 ) THEN
+        ! xe =  (node(elem(i,1),1)+node(elem(i,2),1)+node(elem(i,3),1) ) /3.d0
+      ! elseif ( nbr_nodes_per_elem(i).EQ.4 ) THEN
+        ! xe =  (node(elem(i,1),1)+node(elem(i,2),1)+node(elem(i,3),1)+node(elem(i,4),1) ) /4.d0
+      ! else
+        ! write(*,*) "----- Bathymetric depth, the number of nodes per element is incorrect ",i
+      ! endif
         
-      IF (xe .LE. (xMax*1.5d00)) THEN ! Steep
-        hleft = hright
-        slope = slope1
-        arrayout(i) = hleft - slope*(xe-xMin)
-      ELSE                          ! Mild
-        slope = slope2
-        hleft = hright - slope1*xMax*0.5d00  
-        arrayout(i) = hleft - slope*(xe-xMin-xMax*0.5d00)     
-      ENDIF      
-    ENDDO
+      ! IF (xe .LE. (xMax*1.5d00)) THEN ! Steep
+        ! hleft = hright
+        ! slope = slope1
+        ! arrayout(i) = hleft - slope*(xe-xMin)
+      ! ELSE                          ! Mild
+        ! slope = slope2
+        ! hleft = hright - slope1*xMax*0.5d00  
+        ! arrayout(i) = hleft - slope*(xe-xMin-xMax*0.5d00)     
+      ! ENDIF      
+    ! ENDDO
     
     write(10,'(T1,I9,ES24.16E2)') (i+nbrFront, arrayout(i),i=1,nbrElem)
     write(10,'(T1,A15)') "$EndElementData"
@@ -202,8 +203,8 @@ SUBROUTINE write_initial_condition_gmsh()
     write(10,'(T1,I9)') nbrFront
     
     do i=1,nbrFront
-        h_inlet = he
-        h_outlet = he
+        h_inlet = hi
+        h_outlet = hi
         IF ( front(i,3).eq.1 ) THEN
         ! Inlet 
             write(10,'(T1,I9,2X,ES24.16E2)') i, h_inlet
@@ -230,7 +231,10 @@ SUBROUTINE write_initial_condition_gmsh()
     write(10,'(T1,I9)') nbrFront
     
     do i=1,nbrFront
-       u_inlet = q / hi
+       ! Froude number = 2.7
+        u_inlet = 2.7d0 * sqrt(9.81d0 * hi)
+	
+       ! u_inlet = q / hi
 
         ! ye = 0.5d00 * ( node( front(i,1) ,2) + node( front(i,2) ,2) )
         
