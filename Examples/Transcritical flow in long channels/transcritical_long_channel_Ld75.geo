@@ -1,10 +1,12 @@
 
-Lu = 1000 ; // Length upstream
-Ld = 75 ; // Length downstream
-Lb = 10 ;   // Length of narrowest section
-Le = 20 ;  // Length of expansion
-b1 = 40 ;   // Largest width
+Lu = 1000 ;   // Length upstream
+Ld = 75 ;     // Length downstream
+Lb = 10 ;     // Length of narrowest section
+Le = 20 ;     // Length of expansion
+b1 = 40 ;     // Largest width
 b2 = 26.5 ;   // Smallest width
+
+quad_mesh = 1;  // [0] Triangular mesh or [1] rectangular mesh
 
 y1 = (b1-b2)*0.5;
 
@@ -100,9 +102,15 @@ Plane Surface(5) = {5};
 size_far_away = 40;
 size_middle = 4;
 size_near = 1;
-raff1 = 2;
-raff2 = 4;
-raff3 = 8;
+If (quad_mesh == 0) // Triangles
+    raff1 = 2;
+    raff2 = 4;
+    raff3 = 8;
+Else               // Rectangles
+    raff1 = 3;
+    raff2 = 6;
+    raff3 = 10;
+EndIf
 
 //--   Characteristic lengths at key points
 Characteristic Length {1, 12, 6,7} = size_far_away;
@@ -216,6 +224,11 @@ Background Field = 50;
 
 Mesh.Algorithm = 5 ; // Delaunay will handle complex mesh size
 // fields better - in particular size fields with large element size gradients
+
+If (quad_mesh == 1)
+    Mesh.RecombinationAlgorithm = 0; // 0: simple, 1: blossom, 2: simple full-quad, 3: blossom full-quad
+    Recombine Surface {1,2,3,4,5,6};
+EndIf
 
 Physical Line(3) = {1,2,3,26,27,5,7,28,29,9,10,11}; // Walls
 Physical Line(2) = {6}; // Outlet

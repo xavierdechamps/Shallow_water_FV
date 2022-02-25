@@ -24,19 +24,20 @@ PROGRAM BUILD_INITIAL_SOLUTION
     CALL get_command_argument(2,file_gmsh)
     
     ! Browse the mesh to get the size of the arrays
-    CALL browse_gmsh(mesh_file,length_names,nbrNodes,nbrElem,nbrFront,ok)
+    CALL browse_gmsh(mesh_file,length_names,nbrNodes,nbrElem,nbrTris,nbrQuads,nbrFront,ok)
     IF (ok == 0) THEN
       WRITE(*,*) "The program hasn't started because of a problem during the browsing of the mesh"
       GOTO 200
     endif
     
     ! Allocate the memory for the arrays
-    CALL mem_allocate(node,front,elem,U0,depth,BoundCond,dt,Source,&
+    CALL mem_allocate(node,front,elem,nbr_nodes_per_elem,U0,depth,BoundCond,dt,Source,&
 &                     edges,fnormal,geom_data,cell_data_n,edges_ind,fnormal_ind,&
 &                     nbvar*nbrElem,nbrNodes,nbrElem,nbrFront,nbrInt,0)
 
     ! Read the mesh and the initial solution / boundary conditions
-    CALL read_gmsh(U0,nbvar*nbrElem,mesh_file,length_names,node,elem,front,depth,BoundCond,nbrNodes,nbrElem,nbrFront,0,ok)
+    CALL read_gmsh(U0,nbvar*nbrElem,mesh_file,length_names,node,elem,nbr_nodes_per_elem,front,&
+&                  depth,BoundCond,nbrNodes,nbrElem,nbrTris,nbrQuads,nbrFront,1,ok)
     IF (ok == 0) THEN
       WRITE(*,*) "The program hasn't started because of a problem during the reading of the mesh"
       GOTO 200
@@ -45,7 +46,7 @@ PROGRAM BUILD_INITIAL_SOLUTION
     ENDIF
     
     ! Deallocate the memory for the arrays
-    CALL mem_deallocate(node,front,elem,U0,depth,BoundCond,dt,Source,&
+    CALL mem_deallocate(node,front,elem,nbr_nodes_per_elem,U0,depth,BoundCond,dt,Source,&
 &                       edges,fnormal,geom_data,cell_data_n,edges_ind,fnormal_ind)
     
 200 CONTINUE
@@ -60,9 +61,8 @@ SUBROUTINE write_initial_condition_gmsh()
 
     integer(ki) :: ierr, i, wall_type, edge_id
     real(kr) :: h, hleft,hright, u, v, h_inlet, u_inlet, v_inlet, h_outlet
-    real(kr) :: xMax,xMin,xCenter,circleRadius, circleShiftY, x1, x2, xe, ye
-    real(kr) :: hi, he, B0, q, alpha, a, b, c, d, xm
-    real(kr) :: slope1,slope2,slope
+    real(kr) :: xMax,xMin,xCenter,circleRadius, circleShiftY, x1, x2, xe
+    real(kr) :: slope
     real(kr) :: arrayout(1:nbrElem)
             
     open(unit=10,file=file_gmsh,status="replace",iostat=ierr,form='formatted')
@@ -76,7 +76,8 @@ SUBROUTINE write_initial_condition_gmsh()
     write(10,'(T1,A9)') "$Elements"
     write(10,'(T1,I9)') nbrElem+nbrFront
     write(10,'(T1,I9,2I2,I9,I2,2I9)') (i,1,2,front(i,3),1,front(i,1:2),i=1,nbrFront)    
-    write(10,'(T1,I9,2I2,I9,I2,3I9)') (i+nbrFront,2,2,elem(i,4),1,elem(i,1:3),i=1,nbrElem)
+    IF (nbrTris.NE.0) write(10,'(T1,I9,2I2,I9,I2,3I9)') (i+nbrFront,2,2,elem(i,5),1,elem(i,1:3),i=1,nbrTris)
+    IF (nbrQuads.NE.0) write(10,'(T1,I9,2I2,I9,I2,4I9)') (i+nbrFront+nbrTris,3,2,elem(i+nbrTris,5),1,elem(i+nbrTris,1:4),i=1,nbrQuads)
     write(10,'(T1,A12)') "$EndElements"
 
     !************************************* INITIAL HEIGHT
@@ -92,13 +93,8 @@ SUBROUTINE write_initial_condition_gmsh()
     
     arrayout = 0.d00
     
-    hi = 1.15d0
-    he = 1.163235d0
-    B0 = 2.0d00
-    q  = 4.0d00
-    
     DO i=1,nbrElem
-        hleft = hi
+        hleft = 4.543260901d0 ! normal depth for b1=40, Q=500, S0=0.002, n=0.0389
         arrayout(i) = hleft         
     ENDDO
     
@@ -117,23 +113,8 @@ SUBROUTINE write_initial_condition_gmsh()
     write(10,'(T1,I9)') nbrElem
     
     do i=1,nbrElem
-        ! Uniform velocity profile
-        U = q / hi
-	
-	! Y-coordinate of the cell center
-!        ye = (node(elem(i,1),2)+node(elem(i,2),2)+node(elem(i,3),2) ) / 3.d0
-
-        ! Quadratic velocity profile
-!        U = -6.d00 * q * ye * ( ye - B0 ) / ( hi * B0 * B0 )
-        
-        ! Fourth order velocity profile
-!        alpha = -75.d00
-!        a = 5.d00 * (B0*q/hi + alpha*B0*B0*B0/12.d00)/(B0**5)
-!        b = -2.d00 * a *B0
-!        c = 0.5d00 * alpha
-!        d = a*B0**3 - 0.5d00*alpha*B0
-!        U = a*ye**4 + b*ye**3 + c*ye**2 + d*ye
-        
+	! U = q / h = Q / (B * h)
+        U = 500.d0 / ( 40d0 * 4.543260901d0 )
         V = 0.d0    
         write(10,'(T1,I9,2ES24.16E2,F4.1)') i+nbrFront, U, V, 0.
     end do
@@ -151,36 +132,15 @@ SUBROUTINE write_initial_condition_gmsh()
     write(10,'(T1,A1)') "1"
     write(10,'(T1,I9)') nbrElem
     
-    arrayout = 0.d00
-    
-! Linear slope
-    xMax = maxval(node(:,1) )
     xMin = minval(node(:,1) )
-    hright = 2.0d0
-    slope1 = 0.002d0   ! Slope in the first section of the channel
-    slope2 = 0.0005d0  ! Slope in the second section of the channel
-    
-    DO i=1,nbrElem
-      
-      ! X-coordinate of the center of the cell
+    hleft = 0.0d0
+    slope = 0.002d0 ! = Dy / Dx
+	DO i=1,nbrElem
       xe =  (node(elem(i,1),1)+node(elem(i,2),1)+node(elem(i,3),1) ) /3.d0
-      
-      ! X-coordinate where the slope changes from slope1 to slope2
-      xm = xMax*1.5d00
-      
-      IF (xe .LE. xm) THEN ! Steep
-      ! First section of the channel
-        hleft = hright
-        slope = slope1
-        arrayout(i) = hleft - slope*(xe-xMin)
-      ELSE                          ! Mild
-      ! Second section of the channel
-        slope = slope2
-        hleft = hright - slope1*xm
-        arrayout(i) = hleft - slope*(xe-xMin-xm)     
-      ENDIF      
+      ! Linear slope
+      arrayout(i) = hleft - slope*(xe-xMin)
     ENDDO
-    
+	
     write(10,'(T1,I9,ES24.16E2)') (i+nbrFront, arrayout(i),i=1,nbrElem)
     write(10,'(T1,A15)') "$EndElementData"
     
@@ -196,8 +156,8 @@ SUBROUTINE write_initial_condition_gmsh()
     write(10,'(T1,I9)') nbrFront
     
     do i=1,nbrFront
-        h_inlet = hi
-        h_outlet = hi
+        h_inlet = 4.543260901d0 ! normal depth
+		h_outlet = 2.5160369d0 ! critical depth
         IF ( front(i,3).eq.1 ) THEN
         ! Inlet 
             write(10,'(T1,I9,2X,ES24.16E2)') i, h_inlet
@@ -224,23 +184,8 @@ SUBROUTINE write_initial_condition_gmsh()
     write(10,'(T1,I9)') nbrFront
     
     do i=1,nbrFront
-        ! Uniform velocity profile
-        u_inlet = q / hi
-
-        ! Y-coordinate of the edge center
-!        ye = 0.5d00 * ( node( front(i,1) ,2) + node( front(i,2) ,2) )
-
-        ! Quadratic velocity profile
-!        u_inlet = -6.d00 * q * ye * ( ye - B0 ) / ( hi * B0 * B0 )
-        
-        ! Fourth order velocity profile
-!        alpha = -75.d00
-!        a = 5.d00 * (B0*q/hi + alpha*B0*B0*B0/12.d00)/(B0**5)
-!        b = -2.d00 * a *B0
-!        c = 0.5d00 * alpha
-!        d = a*B0**3 - 0.5d00*alpha*B0
-!        u_inlet = a*ye**4 + b*ye**3 + c*ye**2 + d*ye
-        
+	! U = q / h = Q / (B * h)
+        u_inlet = 500.d0 / ( 40d0 * 4.543260901d0 )
         v_inlet = 0.d0
         IF ( front(i,3).eq.1 ) THEN
         ! Inlet 
