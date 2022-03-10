@@ -44,13 +44,13 @@ Vp = 81; // Vertical
 Hp = 80; // Horizontal middle
 Hp2 = 21; // Horizontal left+right
 
-uniform = 1 ;
+uniform = 0 ;
 
 If (uniform == 0)
     //--   Merge a post-processing view containing the target anisotropic mesh sizes
     Include "channel_contraction_Lai_sol.pos";
 
-    Plugin(MathEval).Expression0 = "v0/60" ;
+    Plugin(MathEval).Expression0 = "v0/80" ;
     Plugin(MathEval).View = 0 ;
     Plugin(MathEval).Run ;
 
@@ -68,6 +68,9 @@ Else
     Transfinite Surface {2} = {2,3,6,7} Alternated;
     Transfinite Surface {3} = {4,5,6,3} Alternated;
 EndIf
+
+Mesh.RecombinationAlgorithm = 0; // 0: simple, 1: blossom, 2: simple full-quad, 3: blossom full-quad
+Recombine Surface {1,2,3};
 
 Physical Line(3) = {1,2,3,5,6,7}; // Walls
 Physical Line(2) = {4}; // Outlet
