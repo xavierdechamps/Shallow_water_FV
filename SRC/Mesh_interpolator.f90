@@ -28,11 +28,6 @@ PROGRAM MESH_INTERPOLATOR
     CALL get_command_argument(2,mesh_new)
     CALL get_command_argument(3,sol_input)
     CALL get_command_argument(4,sol_output)
-    
-    write(*,*) mesh_old
-    write(*,*) mesh_new
-    write(*,*) sol_input
-    write(*,*) sol_output
         
     ! Browse the old/new mesh to get the size of the arrays
     CALL browse_gmsh(mesh_old,length_names,nbrNodes,nbrElem,nbrTris,nbrQuads,nbrFront,ok)
@@ -58,13 +53,13 @@ PROGRAM MESH_INTERPOLATOR
     CALL read_gmsh(U0,nbvar*nbrElem,mesh_old,length_names,node,elem,nbr_nodes_per_elem,front,&
 &                 depth,BoundCond,nbrNodes,nbrElem,nbrTris,nbrQuads,nbrFront,1,ok)
     IF (ok == 0) THEN
-      WRITE(*,*) "The program hasn't started because of a problem during the reading of the mesh"
+      WRITE(*,*) "The program hasn't started because of a problem during the reading of the old mesh"
       GOTO 200
     ENDIF
     CALL read_gmsh(U0_new,nbvar*nbrElem_new,mesh_new,length_names,node_new,elem_new,nbr_nodes_per_elem_new,front_new,&
 &                  depth_new,BoundCond_new,nbrNodes_new,nbrElem_new,nbrTris_new,nbrQuads_new,nbrFront_new,1,ok)
     IF (ok == 0) THEN
-      WRITE(*,*) "The program hasn't started because of a problem during the reading of the mesh"
+      WRITE(*,*) "The program hasn't started because of a problem during the reading of the new mesh"
       GOTO 200
     ENDIF
     

@@ -168,7 +168,8 @@ SUBROUTINE runge_kutta
        count = count + 1
        IF (mod(count,savenTime)==0) THEN
           WRITE(*,*) "Writing the solution in .msh and .dat format"
-          CALL write_gmsh(U0,nbvar*nbrElem,file_gmsh,length_names,node,elem,front,nbrNodes,nbrElem,nbrTris,nbrQuads,nbrFront,i,count)
+          CALL write_gmsh(U0,nbvar*nbrElem,file_gmsh,length_names,node,elem,front,nbrNodes,nbrElem,nbrTris,nbrQuads,&
+&                         nbrFront,i,count)
           CALL write_solution(U0,nbvar*nbrElem,file_dat,length_names,ok)
           IF (ok == 0) EXIT
        END IF

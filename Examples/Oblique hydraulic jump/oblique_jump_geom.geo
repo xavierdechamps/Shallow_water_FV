@@ -3,6 +3,8 @@ bottom = 5;
 hexit = 10;
 angle = 10*Pi/180;
 
+quad_mesh = 1;  // [0] Triangular mesh or [1] rectangular mesh
+
 x_ramp = 15;
 Point(1) = {0, 0, 0};
 Point(2) = {bottom, 0, 0};
@@ -32,6 +34,11 @@ Transfinite Line {2, 4} = Hp2 Using Progression 1; // slope bottom+top
 Transfinite Line {3,6,7} = Vp Using Progression 1; // vertical inflow+outflow
 Transfinite Surface {1} = {1, 2, 6, 5} Alternated;
 Transfinite Surface {2} = {3, 4, 6,2} Alternated;
+
+If (quad_mesh == 1)
+    Mesh.RecombinationAlgorithm = 0; // 0: simple, 1: blossom, 2: simple full-quad, 3: blossom full-quad
+    Recombine Surface {1,2,3,4,5,6};
+EndIf
 
 Physical Line(20) = {1,2,4,5};
 Physical Line(21) = {3};

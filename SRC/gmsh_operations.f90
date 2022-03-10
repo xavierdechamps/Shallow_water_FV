@@ -91,7 +91,7 @@ SUBROUTINE write_gmsh(U0,lengU0,file_gmsh,lengch,node,elem,front,nbrNodes,nbrEle
     INTEGER(ki), INTENT(IN) :: lengU0,lengch
     REAL(kr), INTENT(IN)    :: U0(lengU0)
     REAL(kr), INTENT(IN)    :: node(nbrNodes,2)
-    INTEGER(ki), INTENT(IN)    :: elem(nbrElem,4)
+    INTEGER(ki), INTENT(IN)    :: elem(nbrElem,5)
     INTEGER(ki), INTENT(IN)    :: front(nbrFront,4)
     CHARACTER(LEN=lengch), INTENT(IN) :: file_gmsh
     
@@ -116,7 +116,8 @@ SUBROUTINE write_gmsh(U0,lengU0,file_gmsh,lengch,node,elem,front,nbrNodes,nbrEle
        WRITE(10,'(T1,I9)') nbrElem+nbrFront
        WRITE(10,'(T1,I9,2I2,I9,I2,2I9)') (i,1,2,front(i,3),1,front(i,1:2),i=1,nbrFront)       
        IF (nbrTris.NE.0) write(10,'(T1,I9,2I2,I9,I2,3I9)') (i+nbrFront,2,2,elem(i,5),1,elem(i,1:3),i=1,nbrTris)
-       IF (nbrQuads.NE.0) write(10,'(T1,I9,2I2,I9,I2,4I9)') (i+nbrFront+nbrTris,3,2,elem(i+nbrTris,5),1,elem(i+nbrTris,1:4),i=1,nbrQuads)
+       IF (nbrQuads.NE.0) write(10,'(T1,I9,2I2,I9,I2,4I9)') (i+nbrFront+nbrTris,3,2,elem(i+nbrTris,5),1, &
+&                                                            elem(i+nbrTris,1:4),i=1,nbrQuads)
        WRITE(10,'(T1,A12)') "$EndElements"
     ELSE
        OPEN(UNIT=10,FILE=file_gmsh,STATUS="old",ACCESS="append",IOSTAT=ierr,FORM='formatted')
@@ -193,7 +194,7 @@ SUBROUTINE read_gmsh(U0,lengU0,mesh_file,lengch,node,elem,nbr_nodes_per_elem,fro
     REAL(kr), INTENT(OUT)    :: node(nbrNodes,2)
     REAL(kr), INTENT(OUT)    :: depth(nbrElem)
     REAL(kr), INTENT(OUT)    :: BoundCond(nbrFront,3)
-    INTEGER(ki), INTENT(OUT)    :: elem(nbrElem,4)
+    INTEGER(ki), INTENT(OUT)    :: elem(nbrElem,5)
     INTEGER(ki), INTENT(OUT)    :: front(nbrFront,4)
     INTEGER(ki), INTENT(OUT)    :: nbr_nodes_per_elem(nbrElem)
     CHARACTER(LEN=lengch), INTENT(IN) :: mesh_file
@@ -203,7 +204,7 @@ SUBROUTINE read_gmsh(U0,lengU0,mesh_file,lengch,node,elem,nbr_nodes_per_elem,fro
     INTEGER(ki) :: i, ierr, a, b, c, nbrElemTot=0,nbrNodeEdge=0
     INTEGER(ki) :: istep
     REAL(kr) :: header,tmp
-    LOGICAL :: header2 = .true.
+    LOGICAL :: header21 = .true.
     EXTERNAL :: find_elem_front, time_display
 
     CALL sampletime(time_begin)
@@ -228,7 +229,7 @@ SUBROUTINE read_gmsh(U0,lengU0,mesh_file,lengch,node,elem,nbr_nodes_per_elem,fro
       GOTO 100
     END IF
 
-    IF (header .GT. 2.1) header2 = .false.
+    IF (header .GT. 2.1) header21 = .false.
     
     istep = 2
     
@@ -258,32 +259,34 @@ SUBROUTINE read_gmsh(U0,lengU0,mesh_file,lengch,node,elem,nbr_nodes_per_elem,fro
     ! elem(:,1:4)   : node IDs composing the 2D element
     ! elem(:,5)     : physical tag of the 2D element
     
-    IF (header2) THEN  ! Read the boundary edges
+    IF (header21) THEN  ! Read the boundary edges
        READ(10,*) (a,a,a,front(i,3),a,a,front(i,1),front(i,2),i=1,nbrFront)
     ELSE
        READ(10,*) (a,a,a,front(i,3),a,front(i,1),front(i,2),i=1,nbrFront)
     END IF
     WRITE(*,102) nbrFront
     
-    IF (header2) THEN  ! Read the 2D elements
-       READ(10,*) (a,a,a,elem(i,5),a,a,elem(i,1),elem(i,2),elem(i,3),i=1,nbrTris) ! Triangles
-       READ(10,*) (a,a,a,elem(i,5),a,a,elem(i,1),elem(i,2),elem(i,3),elem(i,4),i=nbrTris+1,nbrTris+nbrQuads) ! Quadrangles
-       DO i=1,nbrTris
-         nbr_nodes_per_elem(i) = 3
-       ENDDO
-       DO i=nbrTris+1,nbrTris+nbrQuads
-         nbr_nodes_per_elem(i) = 4
-       ENDDO
+    IF (header21) THEN  ! Read the 2D elements
+       IF (nbrTris.GT.0) THEN
+         READ(10,*) (a,a,a,elem(i,5),a,a,elem(i,1),elem(i,2),elem(i,3),i=1,nbrTris) ! Triangles
+       ENDIF
+       IF (nbrQuads.GT.0) THEN
+         READ(10,*) (a,a,a,elem(i,5),a,a,elem(i,1),elem(i,2),elem(i,3),elem(i,4),i=nbrTris+1,nbrTris+nbrQuads) ! Quadrangles
+       ENDIF
     ELSE
-       READ(10,*) (a,a,a,elem(i,5),a,elem(i,1),elem(i,2),elem(i,3),i=1,nbrTris) ! Triangles
-       READ(10,*) (a,a,a,elem(i,5),a,elem(i,1),elem(i,2),elem(i,3),elem(i,4),i=nbrTris+1,nbrTris+nbrQuads) ! Quadrangles
-       DO i=1,nbrTris
-          nbr_nodes_per_elem(i) = 3
-       ENDDO
-       DO i=nbrTris+1,nbrTris+nbrQuads
-          nbr_nodes_per_elem(i) = 4
-       ENDDO
+       IF (nbrTris.GT.0) THEN
+         READ(10,*) (a,a,a,elem(i,5),a,elem(i,1),elem(i,2),elem(i,3),i=1,nbrTris) ! Triangles
+       ENDIF
+       IF (nbrQuads.GT.0) THEN
+         READ(10,*) (a,a,a,elem(i,5),a,elem(i,1),elem(i,2),elem(i,3),elem(i,4),i=nbrTris+1,nbrTris+nbrQuads) ! Quadrangles
+       ENDIF
     END IF
+    DO i=1,nbrTris
+      nbr_nodes_per_elem(i) = 3
+    ENDDO
+    DO i=nbrTris+1,nbrTris+nbrQuads
+      nbr_nodes_per_elem(i) = 4
+    ENDDO
     WRITE(*,103) nbrTris
     WRITE(*,104) nbrQuads
 
@@ -437,7 +440,7 @@ SUBROUTINE browse_gmsh(mesh_file,lengch,nbrNodes,nbrElem,nbrTris,nbrQuads,nbrFro
     INTEGER(ki) :: i, j, ierr, a, b, c, nbrElemTot=0,nbrNodeEdge=0
     INTEGER(ki) :: istep
     REAL(kr) :: header,tmp
-    LOGICAL :: header2 = .true.
+    LOGICAL :: header21 = .true.
     EXTERNAL :: find_elem_front, time_display
 
     ok = 1
@@ -463,7 +466,7 @@ SUBROUTINE browse_gmsh(mesh_file,lengch,nbrNodes,nbrElem,nbrTris,nbrQuads,nbrFro
       GOTO 100
     END IF
 
-    IF (header .GT. 2.1) header2 = .false.
+    IF (header .GT. 2.1) header21 = .false.
     
     istep = 2
     

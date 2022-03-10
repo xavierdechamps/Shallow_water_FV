@@ -1,0 +1,44 @@
+
+message ( "Entering in the configuration file CMake.config" )
+
+unset ( Windows       CACHE )
+unset ( Have_SigWatch CACHE )
+unset ( Have_Gnuplot  CACHE )
+unset ( Have_OpenMP   CACHE )
+unset ( CMAKE_BUILD_TYPE   CACHE )
+unset ( MANGLING   CACHE )
+
+# General options / Flags #########################################################
+set ( Windows           OFF CACHE BOOL "Is it a Windows-based environment?" )
+set ( Have_SigWatch     ON CACHE BOOL "Do you have the SigWatch library?" )
+set ( Have_Gnuplot      OFF CACHE BOOL "Do you have Gnuplot?" )
+set ( Have_OpenMP       ON CACHE BOOL "Does your compiler have OpenMP?")
+set ( MANGLING "lowercase_" CACHE STRING "The standard rename procedure for C function during the linking phase. You may choose between UPPERCASE_ lowercase_ and lowercase")
+
+# The option /heap-arrays gets rid of the stackoverflow error (not enough memory)
+set (CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -cpp -ffree-form")
+
+#set ( CMAKE_Fortran_FLAGS_DEBUG   "/debug:all /debug-parameters /g /traceback" CACHE STRING "Fortran options debug" )
+# set ( CMAKE_Fortran_FLAGS_RELEASE "-O3 -DNDEBUG" CACHE STRING "Fortran options release" FORCE )
+IF (Have_OpenMP)
+   message("OpenMP activated")
+   find_package(OpenMP REQUIRED)
+   message("${OpenMP_Fortran_FLAGS}")
+ENDIF()
+
+# add /VERBOSE:LIB to CMAKE_EXE_LINKER_FLAGS to print additionnal info on required libraries when linking
+# set ( CMAKE_EXE_LINKER_FLAGS "-NODEFAULTLIB:library" )
+
+# MKL BLAS if Intel compilator ####################################################
+# set ( BLAS_PATH "C:/Program Files (x86)/Intel/oneAPI/mkl/2021.2.0"    CACHE PATH "Path to MKL BLAS libraries" )
+
+# sigwatch library ################################################################
+IF (Have_SigWatch)
+  message ("Using the sigwatch library ${CMAKE_SOURCE_DIR}/Libs/libsigwatch.a")
+  set ( SIGWATCH_LIBRARIES  "${CMAKE_SOURCE_DIR}/Libs/libsigwatch.a" CACHE PATH "Path to the SigWatch library" )
+  set ( SIGWATCH_FLAG  "-DWITHSIGWATCH" )
+else ()
+  message ( "No sigwatch library found..." )
+  unset ( SIGWATCH_LIBRARIES CACHE )
+  set ( SIGWATCH_FLAG  "" )
+ENDIF ()
