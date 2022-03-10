@@ -33,10 +33,9 @@ MODULE module_shallow
     
     INTEGER(ki) :: nbrNodes, nbrElem, nbrFront, nbrInt, nbrBC
     INTEGER(ki) :: nTime, shownTime, savenTime
-    INTEGER(ki) :: time_begin, time_end
+    INTEGER(ki) :: time_begin, time_end, steady, restart
     INTEGER(ki), DIMENSION(2,5) :: CLTable
     
-    LOGICAL   :: restart,steady
     
     REAL(kr)  :: CFL, ggrav, deltaTfixed, eps, manning_b, manning_w
     
@@ -114,26 +113,55 @@ END MODULE module_mem_allocate
 #ifdef WITHSIGWATCH
 MODULE signal_handler
 !-----------------------------------------------------------------------
+!DEC$ IF .NOT. DEFINED( SIGNAL_NAMES )
+!DEC$ DEFINE SIGNAL_NAMES
+
+#ifdef UPPERCASE
+#define Watch_signal_name WATCHSIGNALNAME
+#define Watch_signal WATCHSIGNAL
+#define Get_last_signal GETLASTSIGNAL
+#endif
+
+#ifdef UPPERCASE_
+#define Watch_signal_name WATCHSIGNALNAME_
+#define Watch_signal WATCHSIGNAL_
+#define Get_last_signal GETLASTSIGNAL_
+#endif
+
+#ifdef lowercase_
+#define Watch_signal_name watchsignalname_
+#define Watch_signal watchsignal_
+#define Get_last_signal getlastsignal_
+#endif
+
+#ifdef lowercase
+#define Watch_signal_name watchsignalname
+#define Watch_signal watchsignal
+#define Get_last_signal getlastsignal
+#endif
+
+!DEC$ ENDIF
+
   USE, INTRINSIC :: iso_c_binding, only: C_INT, C_CHAR
 
-  IMPLICIT NONE (type, external)
+    IMPLICIT NONE !(type, external)
 
   INTERFACE
 
-  INTEGER(C_INT) FUNCTION watchsignalname(signame, response) bind(C)
+    INTEGER(C_INT) FUNCTION Watch_signal_name(signame, response) bind(C)
     import C_INT, C_CHAR
     CHARACTER(kind=c_char), INTENT(IN) :: signame(*)
     INTEGER(C_INT), INTENT(IN) :: response
-  END FUNCTION watchsignalname
+    END FUNCTION Watch_signal_name
 
-  INTEGER(C_INT) FUNCTION watchsignal(sig) bind(C)
+    INTEGER(C_INT) FUNCTION Watch_signal(sig) bind(C)
     import C_INT
     INTEGER(C_INT), INTENT(IN) :: sig
-  END FUNCTION watchsignal
+    END FUNCTION Watch_signal
 
-  INTEGER(C_INT) FUNCTION getlastsignal() bind(C)
+    INTEGER(C_INT) FUNCTION Get_last_signal() bind(C)
     import C_INT
-  END FUNCTION getlastsignal
+    END FUNCTION Get_last_signal
 
   END INTERFACE
 !-----------------------------------------------------------------------

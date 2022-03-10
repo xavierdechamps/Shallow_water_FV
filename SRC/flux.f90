@@ -4,6 +4,7 @@
 !##########################################################
 SUBROUTINE flux(Hvec,Source_sf, Q)
     USE module_shallow
+    USE OMP_LIB
     IMPLICIT NONE
 
     ! Subroutine parameters
@@ -17,14 +18,22 @@ SUBROUTINE flux(Hvec,Source_sf, Q)
     REAL(kr), DIMENSION(1:nbvar,1:2) :: FL, FR
     REAL(kr), DIMENSION(1:2) :: n
     REAL(kr) :: ds, SL, SR, h, u, v, c, Froude, dij, Hi, Hj
-    INTEGER(ki) :: i, idL, idR, error
+    INTEGER(ki) :: i, idL, idR, error,chunck
     LOGICAL  :: iswall
-
+    
     Hvec = zero
     Source_sf = zero
     iswall = .FALSE.
+    
     ! Loop on the internal edges
-    internal : DO i=1,nbrInt
+!$OMP PARALLEL &
+!$OMP& default (shared) &
+!$OMP& private (temp,Fup,idL,idR,SL,SR,qL,qR,n,ds,FL,FR,Fav,qAv,dij,Hi,Hj,sourceloc_s,sourceloc_f) &
+!$OMP& reduction(+: Hvec,Source_sf)
+!    chunck = nbrInt / omp_get_num_threads()
+!$OMP DO
+! schedule(static,chunck)
+    DO i=1,nbrInt    
        temp = zero
        Fup  = zero
        idL = edges_ind(i,1) ! ID of 2D element, normal pointing outwards
@@ -45,7 +54,7 @@ SUBROUTINE flux(Hvec,Source_sf, Q)
        
        CALL getFlux(qL,FL) ! Get the local flux for the cell left of the edge
        CALL getFlux(qR,FR) ! Get the local flux for the cell right of the edge
-       
+              
        ! Average the flux
        Fav = ((SL*FL(:,1) + SR*FR(:,1))*n(1) + (SL*FL(:,2) + SR*FR(:,2))*n(2))/(SL+SR)
        qAv = (SL*qL + SR*qR)/(SL+SR) ! Average the solution 
@@ -57,11 +66,15 @@ SUBROUTINE flux(Hvec,Source_sf, Q)
        
        ! Get the upwind + source terms
        CALL getUpwind_and_Source(qL,qR,qAv,n,Fup,sourceloc_f,sourceloc_s,Hi,Hj,dij,iswall,ds,SL)
-       
+              
        ! Add the contribution to the element idL
        temp = (Fav + Fup)*ds/SL
+       
+       ! write(*,'(3i3,2f20.15)') i,omp_get_thread_num(),idL*nbvar,Hvec(idL*nbvar),temp(3)
+       
        Hvec     (idL*nbvar-2:idL*nbvar) = Hvec     (idL*nbvar-2:idL*nbvar) + temp
        Source_sf(idL*nbvar-2:idL*nbvar) = Source_sf(idL*nbvar-2:idL*nbvar) + (sourceloc_f+sourceloc_s) * edges(i,5) / SL
+       
        
        ! Add the contribution to the other element idR, Fav -> -Fav
        n = -n
@@ -77,10 +90,19 @@ SUBROUTINE flux(Hvec,Source_sf, Q)
        Hvec     (idR*nbvar-2:idR*nbvar) = Hvec     (idR*nbvar-2:idR*nbvar) + temp
        Source_sf(idR*nbvar-2:idR*nbvar) = Source_sf(idR*nbvar-2:idR*nbvar) + (sourceloc_f+sourceloc_s) * edges(i,6) / SR
 
-    END DO internal
+    END DO
+!$OMP END DO
+!$OMP END PARALLEL
 
     ! Loop on the border edges to take into account the boundary conditions
-    border : DO i=1,nbrFront 
+!$OMP PARALLEL &
+!$OMP& default (shared) &
+!$OMP& private (temp,Fup,idL,idR,SL,SR,qL,qR,n,ds,iswall,h,u,v,c,Froude,FL,FR,Fav,qAv,dij,Hi,Hj,sourceloc_s,sourceloc_f) & 
+!$OMP& reduction(+: Hvec,Source_sf)
+!    chunck = nbrFront / omp_get_num_threads()
+!$OMP DO 
+!schedule(static,chunck)
+    DO i=1,nbrFront 
        temp = zero
        Fup  = zero
        idL = fnormal_ind(i,1) ! ID of 2D element
@@ -104,9 +126,9 @@ SUBROUTINE flux(Hvec,Source_sf, Q)
              c = SQRT(ggrav*h) ! wave speed
              Froude = SQRT(u*u+v*v)/c
              IF(Froude.GE.1.0D00) THEN ! supercritical flow
-                qR(1) = 2*h - qL(1)
-                qR(2) = 2*u - qL(2)
-                qR(3) = 2*v - qL(3)
+                qR(1) = 2.d00*h - qL(1)
+                qR(2) = 2.d00*u - qL(2)
+                qR(3) = 2.d00*v - qL(3)
              ELSE ! subcritical flow
                 qR(1) = qL(1)
                 
@@ -114,8 +136,8 @@ SUBROUTINE flux(Hvec,Source_sf, Q)
                 u = u * h / qL(1)
                 v = v * h / qL(1)
                 
-                qR(2) = 2*u - qL(2)
-                qR(3) = 2*v - qL(3)
+                qR(2) = 2.d00*u - qL(2)
+                qR(3) = 2.d00*v - qL(3)
              ENDIF
              
           CASE (1) ! outlet
@@ -124,7 +146,7 @@ SUBROUTINE flux(Hvec,Source_sf, Q)
              v = BoundCond(fnormal_ind(i,4),3) ! imposed v
              c = SQRT(ggrav*h) ! wave speed
              Froude = SQRT(u*u+v*v)/c
-             IF(Froude>=1) THEN ! supercritical flow
+             IF(Froude.GE.1.0D00) THEN ! supercritical flow
                 qR = qL
              ELSE ! subcritical
                 qR(1)   = 2*h - qL(1)
@@ -133,8 +155,8 @@ SUBROUTINE flux(Hvec,Source_sf, Q)
 
           CASE (2) ! wall, cancel the wall-normal velocity component
              qR(1) = qL(1)
-             qR(2) = qL(2) - 2*(qL(2)*n(1)+qL(3)*n(2))*n(1)
-             qR(3) = qL(3) - 2*(qL(2)*n(1)+qL(3)*n(2))*n(2)
+             qR(2) = qL(2) - 2.d00*(qL(2)*n(1)+qL(3)*n(2))*n(1)
+             qR(3) = qL(3) - 2.d00*(qL(2)*n(1)+qL(3)*n(2))*n(2)
              iswall = .TRUE.
      
           CASE (3) ! symmetry
@@ -152,8 +174,8 @@ SUBROUTINE flux(Hvec,Source_sf, Q)
        CALL getFlux(qR,FR) ! Get the local flux for the ghost cell
        
        ! Average the flux and the solution
-       Fav = 0.5*(FL(:,1)+FR(:,1))*n(1) + 0.5*(FL(:,2)+FR(:,2))*n(2)
-       qAv = 0.5*(qL+qR)
+       Fav = 0.5d00*(FL(:,1)+FR(:,1))*n(1) + 0.5d00*(FL(:,2)+FR(:,2))*n(2)
+       qAv = 0.5d00*(qL+qR)
        
        ! Get the distance from center of element to center of edge
        dij = SQRT( ( geom_data(idL,3) - fnormal(i,3) )**2 + ( geom_data(idL,4) - fnormal(i,4) )**2 )
@@ -167,7 +189,9 @@ SUBROUTINE flux(Hvec,Source_sf, Q)
        temp = (Fav + Fup)*ds/SL
        Hvec(idL*nbvar-2:idL*nbvar) = Hvec(idL*nbvar-2:idL*nbvar) + temp
        Source_sf(idL*nbvar-2:idL*nbvar) = Source_sf(idL*nbvar-2:idL*nbvar) + sourceloc_f * fnormal(i,5) / SL
-    END DO border
+    END DO
+!$OMP END DO
+!$OMP END PARALLEL
 
 END SUBROUTINE flux
 
@@ -188,13 +212,13 @@ SUBROUTINE getFlux(q,F)
     
     ! Flux for the X-gradient
     F(1,1) = q(1)*q(2)
-    F(2,1) = q(1)*q(2)*q(2) + 0.5*ggrav*q(1)*q(1)
+    F(2,1) = q(1)*q(2)*q(2) + 0.5d00*ggrav*q(1)*q(1)
     F(3,1) = q(1)*q(2)*q(3)
 
     ! Flux for the Y-gradient
     F(1,2) = q(1)*q(3)
     F(2,2) = q(1)*q(2)*q(3)
-    F(3,2) = q(1)*q(3)*q(3) + 0.5*ggrav*q(1)*q(1)
+    F(3,2) = q(1)*q(3)*q(3) + 0.5d00*ggrav*q(1)*q(1)
 
 END SUBROUTINE getFlux
 
@@ -302,9 +326,9 @@ SUBROUTINE upwind_term(q,Qmat,sourceMat,n)
     
     ! Fill in the matrix that contains the inverse of the eigenvalues on the diagonal
     invlambda = zero
-    IF (ABS(lambda1).EQ.0.0d0) lambda1=eps
-    IF (ABS(lambda2).EQ.0.0d0) lambda2=eps
-    IF (ABS(lambda3).EQ.0.0d0) lambda3=eps
+    IF (ABS(lambda1).EQ.zero) lambda1=eps
+    IF (ABS(lambda2).EQ.zero) lambda2=eps
+    IF (ABS(lambda3).EQ.zero) lambda3=eps
     invlambda(1,1) = one/lambda1
     invlambda(2,2) = one/lambda2
     invlambda(3,3) = one/lambda3
@@ -324,7 +348,7 @@ SUBROUTINE upwind_term(q,Qmat,sourceMat,n)
     Xm1(1,1:3) = (/   2*n(2)*u-2*n(1)*v, -2*n(2),  2*n(1)     /)
     Xm1(2,1:3) = (/   c-n(1)*u-n(2)*v,      n(1),    n(2)     /)
     Xm1(3,1:3) = (/   c+n(1)*u+n(2)*v,     -n(1),   -n(2)     /)
-    Xm1 = Xm1 * 0.5d0 / c
+    Xm1 = Xm1 * 0.5d00 / c
     
     ! Compute abs(Q) = X abs(lambda) X-1
     temp  = MATMUL(abslambda,Xm1)

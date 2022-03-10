@@ -1,10 +1,12 @@
 cmake_minimum_required(VERSION 3.15)
 
 # The kind of compilation : Release or Debug ######################################
-set ( CMAKE_BUILD_TYPE "Release" CACHE STRING "Debug or Release" FORCE)
+# set ( CMAKE_BUILD_TYPE "Release" CACHE STRING "Debug or Release" FORCE)
+set ( CMAKE_BUILD_TYPE Release)
 # RelWithDebInfo    Release   Debug
 
 set(CMAKE_TRY_COMPILE_TARGET_TYPE "STATIC_LIBRARY")
+
 
 project(Shallow
 LANGUAGES Fortran
@@ -33,12 +35,12 @@ else ()
    set ( GNUPLOT_FLAG  "" )
 endif()
 
-add_definitions ( ${ENVI_FLAG} ${SIGWATCH_FLAG} ${GNUPLOT_FLAG} )
+add_definitions ( ${ENVI_FLAG} ${SIGWATCH_FLAG} ${GNUPLOT_FLAG} -D${MANGLING} )
 
 # The executables are put in the source_dir/EXE directory ##########################
 message ( "The executables are to be put in ${CMAKE_CURRENT_SOURCE_DIR}/EXE" )
 set ( EXECUTABLE_OUTPUT_PATH ${CMAKE_CURRENT_SOURCE_DIR}/EXE )
-set ( LIBRARY_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/EXE )
+set ( CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/Libs )
 
 # The compiled modules are put in the source_dir/OBJ directory #####################
 set ( CMAKE_Fortran_MODULE_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/OBJ )
@@ -71,6 +73,7 @@ if ( Have_Gnuplot )
   target_sources( shallow PUBLIC ${SRC_dir}/gnufor.f90 )
 endif()
 add_dependencies( shallow libmodules)
+
 set_target_properties ( shallow PROPERTIES LINKER_LANGUAGE Fortran)
 
 #
@@ -106,7 +109,12 @@ add_dependencies( mesh_interpolator libmodules)
 set_target_properties ( mesh_interpolator PROPERTIES LINKER_LANGUAGE Fortran)
 
 # Linking with all the external libraries ##########################################
-target_link_libraries( shallow	                 libmodules ${BLAS_LIB} ${SIGWATCH_LIBRARIES} )
-target_link_libraries( build_initial_solution	 libmodules ${BLAS_LIB} )
-target_link_libraries( get_relative_error_theory libmodules ${BLAS_LIB} )
-target_link_libraries( mesh_interpolator         libmodules ${BLAS_LIB} )
+target_link_libraries( shallow	                 PUBLIC libmodules ${SIGWATCH_LIBRARIES} )
+IF (Have_OpenMP)
+  target_compile_options(shallow PUBLIC ${OpenMP_Fortran_FLAGS})
+  target_link_libraries(shallow PUBLIC ${OpenMP_Fortran_FLAGS})
+  # target_link_libraries(shallow PUBLIC OpenMP::OpenMP_Fortran)
+endif()
+target_link_libraries( build_initial_solution	 libmodules )
+target_link_libraries( get_relative_error_theory libmodules )
+target_link_libraries( mesh_interpolator         libmodules )

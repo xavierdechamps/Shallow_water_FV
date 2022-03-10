@@ -171,19 +171,6 @@ SUBROUTINE write_gmsh(U0,lengU0,file_gmsh,lengch,node,elem,front,nbrNodes,nbrEle
     WRITE(10,'(T1,A15)') "$EndElementData"
         
     !*************************************
-    ! WRITE(10,'(T1,A12)') "$ElementData"
-    ! WRITE(10,'(T1,A1)') "1"
-    ! WRITE(10,'(T1,A8)') '"Source"'
-    ! WRITE(10,'(T1,A1)') "1"
-    ! WRITE(10,'(T1,I9)') k
-    ! WRITE(10,'(T1,A1)') "3"
-    ! WRITE(10,'(T1,I9)') count
-    ! WRITE(10,'(T1,A1)') "3"
-    ! WRITE(10,'(T1,I9)') nbrElem
-    ! WRITE(10,'(T1,I9,3ES25.16E3)') (i+nbrFront, Source(i*nbvar-1), Source(i*nbvar), Source(i*nbvar-2),i=1,nbrElem)
-    ! WRITE(10,'(T1,A15)') "$EndElementData"
-    
-    !*************************************
     CLOSE(UNIT=10)
 
 END SUBROUTINE write_gmsh

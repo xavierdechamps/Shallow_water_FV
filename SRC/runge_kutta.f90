@@ -5,6 +5,36 @@
 SUBROUTINE runge_kutta
     USE module_shallow
 #ifdef WITHSIGWATCH
+
+!DEC$ IF .NOT. DEFINED( SIGNAL_NAMES )
+!DEC$ DEFINE SIGNAL_NAMES
+
+#ifdef UPPERCASE
+#define Watch_signal_name WATCHSIGNALNAME
+#define Watch_signal WATCHSIGNAL
+#define Get_last_signal GETLASTSIGNAL
+#endif
+
+#ifdef UPPERCASE_
+#define Watch_signal_name WATCHSIGNALNAME_
+#define Watch_signal WATCHSIGNAL_
+#define Get_last_signal GETLASTSIGNAL_
+#endif
+
+#ifdef lowercase_
+#define Watch_signal_name watchsignalname_
+#define Watch_signal watchsignal_
+#define Get_last_signal getlastsignal_
+#endif
+
+#ifdef lowercase
+#define Watch_signal_name watchsignalname
+#define Watch_signal watchsignal
+#define Get_last_signal getlastsignal
+#endif
+
+!DEC$ ENDIF
+
     USE signal_handler
 #endif
 ! On Windows, call systemqq instead of system (Linux)
@@ -31,8 +61,8 @@ SUBROUTINE runge_kutta
     CHARACTER ( LEN = 255 ) :: command_filename = 'gnuplot_commands.txt'
     
 #ifdef WITHSIGWATCH
-    statussignal = watchsignal(2)  ! INT
-    statussignal = watchsignal(15) ! KILL
+    statussignal = Watch_signal(2)  ! INT
+    statussignal = Watch_signal(15) ! KILL
 #endif
     kill=.false.
     
@@ -61,7 +91,7 @@ SUBROUTINE runge_kutta
     END IF
 
     DO i=1,nTime ! Start the temporal loop
-       IF (steady) THEN
+       IF (steady.NE.0) THEN
           ! Get the local time step for each cell
           CALL deltaT
        ELSE
@@ -118,7 +148,7 @@ SUBROUTINE runge_kutta
           WRITE(*,'(A10,3X,I9,A1,I9,A13,3ES15.8)') "Time step ",i,"/",nTime," - Errors : ", error(i,2:4)
     
 #ifdef WITHGNUPLOT
-          IF (steady) THEN
+          IF (steady.NE.0) THEN
 
 #ifdef WINDOWS
             lreturn = systemqq ( 'start "" /b nircmd win close title "Gnuplot"' ) ! to close the previous gnuplot windows
@@ -144,10 +174,10 @@ SUBROUTINE runge_kutta
        END IF
 
        U0 = Uc
-       Uc = 0.0d00
+       Uc = zero
        
 #ifdef WITHSIGWATCH
-       statussignal=getlastsignal()
+       statussignal = Get_last_signal()
        IF (statussignal.eq.2 .or. statussignal.eq.15)   THEN
          kill=.true.
        ENDIF
