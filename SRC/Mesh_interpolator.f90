@@ -72,7 +72,8 @@ PROGRAM MESH_INTERPOLATOR
     
     WRITE(*,*) "Interpolating the mesh data on the new mesh..."
     modu = nbrElem_new / 10
-    DO i=1,nbrElem_new      
+    
+    DO i=1,nbrElem_new
       xc = zero
       yc = zero
       DO k=1,nbr_nodes_per_elem_new(i)
@@ -104,7 +105,7 @@ PROGRAM MESH_INTERPOLATOR
         test1 = test1 .AND. (cross1.GE.zero)
         test2 = test2 .AND. (cross1.LE.zero)
         
-          IF ( test1 .OR. test2  ) THEN          
+        IF ( test1 .OR. test2  ) THEN          
           U0_new( i*nbvar-2 ) = U0( j*nbvar-2 )
           U0_new( i*nbvar-1 ) = U0( j*nbvar-1 )
           U0_new( i*nbvar   ) = U0( j*nbvar   )
@@ -114,7 +115,7 @@ PROGRAM MESH_INTERPOLATOR
         
       ENDDO
       
-      IF (j.EQ.nbrElem .AND. found.EQ.0) THEN
+      IF (found.EQ.0) THEN
         WRITE(*,*) "Could not find an adequate match for element ",i
       ENDIF
       IF ( MODULO (i-1,modu).EQ.0 ) WRITE(*,'(i4,a)') i*100/nbrElem_new,"% done"
@@ -123,8 +124,9 @@ PROGRAM MESH_INTERPOLATOR
     
     ! Save the solution in the .mesh and .dat formats
 ! If you want to save in gmsh format, you have to define ggrav because the parameter file is not read by this program
-!    ggrav = 9.81d00
-!    CALL write_gmsh(U0_new,nbvar*nbrElem_new,"test_new.msh",length_names,node_new,elem_new,front_new,nbrNodes_new,nbrElem_new,nbrTris_new,nbrQuads_new,nbrFront_new,0,0)
+   ggrav = 9.81d00
+   CALL write_gmsh(U0_new,nbvar*nbrElem_new,"test_new.msh",length_names,node_new,elem_new,front_new,nbrNodes_new,nbrElem_new,&
+&                   nbrTris_new,nbrQuads_new,nbrFront_new,nbr_nodes_per_elem_new,0,0)
     CALL write_solution(U0_new,nbvar*nbrElem_new,sol_output,length_names,ok)
     
     ! Deallocate the memory for the arrays

@@ -49,7 +49,6 @@ PROGRAM MAIN
     ELSE
       ! Compute the required geometrical data for the finite volume method
       CALL get_normal_to_cell()
-
       IF (restart.EQ.1) THEN
          WRITE(*,*) "Starting from the previous solution ",trim(file_restart)
          CALL read_solution(U0,nbvar*nbrElem,file_restart,length_names,ok)

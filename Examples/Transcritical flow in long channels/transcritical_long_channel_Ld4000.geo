@@ -6,7 +6,7 @@ Le = 20 ;     // Length of expansion
 b1 = 40 ;     // Largest width
 b2 = 26.5 ;   // Smallest width
 
-quad_mesh = 0;  // [0] Triangular mesh or [1] rectangular mesh
+quad_mesh = 1;  // [0] Triangular mesh or [1] rectangular mesh
 
 y1 = (b1-b2)*0.5;
 

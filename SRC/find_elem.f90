@@ -88,13 +88,13 @@ END SUBROUTINE find_elem_surf
 ! SUBROUTINE find_vector
 !  Goal: find index 'element' inside array 'vector'
 !##########################################################
-SUBROUTINE find_vector(vector,element,front1,front2)
+SUBROUTINE find_vector(vector,lengvec,element,front1,front2)
     USE module_shallow
     IMPLICIT NONE
 
     ! Subroutine parameters
-    INTEGER(ki), DIMENSION(nbrFront), INTENT(IN) :: vector
-    INTEGER(ki), INTENT(IN) :: element
+    INTEGER(ki), INTENT(IN) :: element,lengvec
+    INTEGER(ki), DIMENSION(lengvec), INTENT(IN) :: vector
     INTEGER(ki), INTENT(OUT) :: front1,front2
     
     ! Local parameters
@@ -104,7 +104,7 @@ SUBROUTINE find_vector(vector,element,front1,front2)
     front2 = 0
     ind = 0
 
-    loop : DO i=1,nbrFront
+    loop : DO i=1,lengvec
       IF (vector(i) .EQ. element) THEN
         ind = ind + 1
         IF (ind .EQ. 1) THEN

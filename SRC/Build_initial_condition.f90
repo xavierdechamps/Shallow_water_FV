@@ -76,9 +76,17 @@ SUBROUTINE write_initial_condition_gmsh()
     write(10,'(T1,A9)') "$Elements"
     write(10,'(T1,I9)') nbrElem+nbrFront
     write(10,'(T1,I9,2I2,I9,I2,2I9)') (i,1,2,front(i,3),1,front(i,1:2),i=1,nbrFront)    
-    IF (nbrTris.NE.0) write(10,'(T1,I9,2I2,I9,I2,3I9)') (i+nbrFront,2,2,elem(i,5),1,elem(i,1:3),i=1,nbrTris)
-    IF (nbrQuads.NE.0) write(10,'(T1,I9,2I2,I9,I2,4I9)') (i+nbrFront+nbrTris,3,2,elem(i+nbrTris,5),1,&
-&                                                         elem(i+nbrTris,1:4),i=1,nbrQuads)
+    DO i=1,nbrElem
+      IF (nbr_nodes_per_elem(i) .EQ. 3) THEN 
+        write(10,'(T1,I9,2I2,I9,I2,3I9)') i+nbrFront,2,2,elem(i,5),1,elem(i,1:3)
+      ELSE IF (nbr_nodes_per_elem(i) .EQ. 4) THEN 
+        write(10,'(T1,I9,2I2,I9,I2,4I9)') i+nbrFront,3,2,elem(i,5),1,&
+&                                                        elem(i,1:4)
+      END IF 
+    ENDDO    
+    ! IF (nbrTris.NE.0) write(10,'(T1,I9,2I2,I9,I2,3I9)') (i+nbrFront,2,2,elem(i,5),1,elem(i,1:3),i=1,nbrTris)
+    ! IF (nbrQuads.NE.0) write(10,'(T1,I9,2I2,I9,I2,4I9)') (i+nbrFront+nbrTris,3,2,elem(i+nbrTris,5),1,&
+! &                                                         elem(i+nbrTris,1:4),i=1,nbrQuads)
     write(10,'(T1,A12)') "$EndElements"
 
     !************************************* INITIAL HEIGHT
@@ -95,7 +103,7 @@ SUBROUTINE write_initial_condition_gmsh()
     arrayout = 0.d00
     
     DO i=1,nbrElem
-        hleft = 1.0d0
+        hleft = 4.543260901d0 ! normal depth for b1=40, Q=500, S0=0.002, n=0.0389
         arrayout(i) = hleft         
     ENDDO
     
@@ -114,7 +122,8 @@ SUBROUTINE write_initial_condition_gmsh()
     write(10,'(T1,I9)') nbrElem
     
     do i=1,nbrElem
-        U = 9.0d0
+	! U = q / h = Q / (B * h)
+        U = 500.d0 / ( 40d0 * 4.543260901d0 )
         V = 0.d0    
         write(10,'(T1,I9,2ES24.16E2,F4.1)') i+nbrFront, U, V, 0.
     end do
@@ -132,8 +141,15 @@ SUBROUTINE write_initial_condition_gmsh()
     write(10,'(T1,A1)') "1"
     write(10,'(T1,I9)') nbrElem
     
-    arrayout = 0.d00
-    
+    xMin = minval(node(:,1) )
+    hleft = 0.0d0
+    slope = 0.002d0 ! = Dy / Dx
+	DO i=1,nbrElem
+      xe =  (node(elem(i,1),1)+node(elem(i,2),1)+node(elem(i,3),1) ) /3.d0
+      ! Linear slope
+      arrayout(i) = hleft - slope*(xe-xMin)
+    ENDDO
+	
     write(10,'(T1,I9,ES24.16E2)') (i+nbrFront, arrayout(i),i=1,nbrElem)
     write(10,'(T1,A15)') "$EndElementData"
     
@@ -149,10 +165,14 @@ SUBROUTINE write_initial_condition_gmsh()
     write(10,'(T1,I9)') nbrFront
     
     do i=1,nbrFront
-        h_inlet = 1.0d0
-        IF ( front(i,3).eq.22 .or.front(i,3).eq.21) THEN
+        h_inlet = 4.543260901d0 ! normal depth
+		h_outlet = 2.5160369d0 ! critical depth
+        IF ( front(i,3).eq.1 ) THEN
         ! Inlet 
             write(10,'(T1,I9,2X,ES24.16E2)') i, h_inlet
+        ELSE IF ( front(i,3).eq.2 ) THEN
+        ! Outlet 
+            write(10,'(T1,I9,2X,ES24.16E2)') i, h_outlet
         ELSE
             write(10,'(T1,I9,2X,ES24.16E2)') i, 0.
         ENDIF
@@ -173,9 +193,10 @@ SUBROUTINE write_initial_condition_gmsh()
     write(10,'(T1,I9)') nbrFront
     
     do i=1,nbrFront
-        u_inlet = 9.0d0
+	! U = q / h = Q / (B * h)
+        u_inlet = 500.d0 / ( 40d0 * 4.543260901d0 )
         v_inlet = 0.d0
-        IF ( front(i,3).eq.22 ) THEN
+        IF ( front(i,3).eq.1 ) THEN
         ! Inlet 
             write(10,'(T1,I9,1X,2ES24.16E2,F4.1)') i, u_inlet, v_inlet, 0.
         ELSE

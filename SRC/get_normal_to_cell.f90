@@ -8,8 +8,10 @@ SUBROUTINE get_normal_to_cell()
     IMPLICIT NONE
 
     ! Local parameters
-    INTEGER(ki) :: i,j,id,q,p,k,l,front1,front2,idx,goahead,idn,edgeID=0,nID=0
+    INTEGER(ki) :: i,j,id,q,p,k,l,front1,front2,idx,goahead
+    INTEGER(ki) :: idn,typec,edgeID=0,nID=0
     INTEGER(ki), DIMENSION(4) :: pos, pos2
+    REAL(kr), DIMENSION(4,2)  :: xy
     REAL(kr) :: xa,xb,xc,xd,ya,yb,yc,yd
     LOGICAL :: test = .false.
     REAL(kr), ALLOCATABLE :: cell_data(:,:)
@@ -57,108 +59,58 @@ SUBROUTINE get_normal_to_cell()
     ! internal_ind(:,1) : 2D element ID left to edge
     ! internal_ind(:,2) : 2D element ID right to edge
     
-    internal_ind = 0
-    fnormal_ind = 0
+    cell_data = zero
+    internal  = zero
+    internal_ind  = 0
+    fnormal_ind   = 0
+    cell_node_ids = 0
+    cell_data_ind = 0
     
     ! Compute the geometrical data for the cells (geom_data) and prepare the data
     ! for the second loop (edges)
-    DO i=1,nbrTris
-      ! Coordinates of the three nodes of the cell
-      xa = node(elem(i,1),1)
-      ya = node(elem(i,1),2)
-      xb = node(elem(i,2),1)
-      yb = node(elem(i,2),2)
-      xc = node(elem(i,3),1)
-      yc = node(elem(i,3),2)
+    DO i=1,nbrElem
+      xy = zero
+      typec = nbr_nodes_per_elem(i)
+      ! Coordinates of the corner nodes of the cell
+      DO j=1,typec
+        xy(j,1) = node(elem(i,j),1)
+        xy(j,2) = node(elem(i,j),2)        
+      END DO
       
       ! Center of cell
-      cell_data(i,1:2) = (/ (xa+xb+xc)/3.0d00, (ya+yb+yc)/3.0d00 /)
+      cell_data(i,1:2) = SUM(xy,DIM=1) / REAL(typec,kind=kr)
       
       ! Get the external normals
-      cell_data(i,3:4) = (/yb-ya, xa-xb/)
-      cell_data(i,5:6) = (/yc-yb, xb-xc/)
-      cell_data(i,7:8) = (/ya-yc, xc-xa/)
-      ! Switch the direction of the normals if pointing inwards
-      IF ((cell_data(i,3)*(xa-cell_data(i,1)) + cell_data(i,4)*(ya-cell_data(i,2)))<zero) then
-        cell_data(i,3:4) = -cell_data(i,3:4)
-      END IF 
-      IF ((cell_data(i,5)*(xb-cell_data(i,1)) + cell_data(i,6)*(yb-cell_data(i,2)))<zero) then
-        cell_data(i,5:6) = -cell_data(i,5:6)
-      END IF 
-      IF ((cell_data(i,7)*(xc-cell_data(i,1)) + cell_data(i,8)*(yc-cell_data(i,2)))<zero) then
-        cell_data(i,7:8) = -cell_data(i,7:8)
-      END IF 
-      
-      ! Find the three 2D elements surrounding the current 2D element and fill cell_data_ind
-      CALL find_elem_surf(i,cell_data_ind(i,1),elem(i,1),elem(i,2))
-      CALL find_elem_surf(i,cell_data_ind(i,2),elem(i,2),elem(i,3))
-      CALL find_elem_surf(i,cell_data_ind(i,3),elem(i,3),elem(i,1))
-      
-      cell_node_ids(i,1,1:2) = (/ elem(i,1),elem(i,2) /)
-      cell_node_ids(i,2,1:2) = (/ elem(i,2),elem(i,3) /)
-      cell_node_ids(i,3,1:2) = (/ elem(i,3),elem(i,1) /)
+      DO j=1,typec
+        k = j+1
+        IF (j.EQ.typec) k = 1
+        cell_data(i,2*j+1 : 2*j+2) = (/xy(k,2)-xy(j,2) , xy(j,1)-xy(k,1)/)
+        ! Switch the direction of the normals if pointing inwards
+        IF ((cell_data(i,2*j+1)*(xy(j,1)-cell_data(i,1)) + cell_data(i,2*j+2)*(xy(j,2)-cell_data(i,2)))<zero) then
+          cell_data(i,2*j+1 : 2*j+2) = - cell_data(i,2*j+1 : 2*j+2)
+        END IF
+        
+        ! Find the three 2D elements surrounding the current 2D element and fill cell_data_ind
+        CALL find_elem_surf(i,cell_data_ind(i,j),elem(i,j),elem(i,k))
+        cell_node_ids(i,j,1:2) = (/ elem(i,j),elem(i,k) /)        
+      END DO
       
       ! Get area + perimeter + center
-      geom_data(i,1) = 0.5d00*ABS((xb-xa)*(yc-ya)-(xc-xa)*(yb-ya))
-      geom_data(i,2) = SQRT((xa-xb)**2 + (ya-yb)**2) + SQRT((xb-xc)**2 + (yb-yc)**2) + &
-&                      SQRT((xc-xa)**2 + (yc-ya)**2)
+      IF (typec .EQ. 3) THEN
+      geom_data(i,1) = 0.5d00*ABS((xy(2,1)-xy(1,1))*(xy(3,2)-xy(1,2))-(xy(3,1)-xy(1,1))*(xy(2,2)-xy(1,2)))
+      geom_data(i,2) = SQRT((xy(1,1)-xy(2,1))**2 + (xy(1,2)-xy(2,2))**2) + SQRT((xy(2,1)-xy(3,1))**2 + (xy(2,2)-xy(3,2))**2) + &
+&                      SQRT((xy(3,1)-xy(1,1))**2 + (xy(3,2)-xy(1,2))**2)
+      ELSE IF (typec .EQ. 4) THEN
+      geom_data(i,1) = 0.5d00*ABS((xy(2,1)-xy(1,1))*(xy(3,2)-xy(1,2))-(xy(3,1)-xy(1,1))*(xy(2,2)-xy(1,2))) &
+&                    + 0.5d00*ABS((xy(3,1)-xy(1,1))*(xy(4,2)-xy(1,2))-(xy(4,1)-xy(1,1))*(xy(3,2)-xy(1,2)))
+      geom_data(i,2) = SQRT((xy(1,1)-xy(2,1))**2 + (xy(1,2)-xy(2,2))**2) + SQRT((xy(2,1)-xy(3,1))**2 + (xy(2,2)-xy(3,2))**2) + &
+&                      SQRT((xy(3,1)-xy(4,1))**2 + (xy(3,2)-xy(4,2))**2) + SQRT((xy(1,1)-xy(4,1))**2 + (xy(1,2)-xy(4,2))**2)
+      END IF
       geom_data(i,3:4) = cell_data(i,1:2)
     END DO
     ! Save the x,y components of the normals in the matrix cell_data_n (module_shallow)
-    cell_data_n(1:nbrTris,1:6) = cell_data(1:nbrTris,3:8)
-    
-    DO i=nbrTris+1,nbrTris+nbrQuads
-      ! Coordinates of the three nodes of the cell
-      xa = node(elem(i,1),1)
-      ya = node(elem(i,1),2)
-      xb = node(elem(i,2),1)
-      yb = node(elem(i,2),2)
-      xc = node(elem(i,3),1)
-      yc = node(elem(i,3),2)
-      xd = node(elem(i,4),1)
-      yd = node(elem(i,4),2)
-      
-      ! Center of cell
-      cell_data(i,1:2) = (/ (xa+xb+xc+xd)*0.25d00, (ya+yb+yc+yd)*0.25d00 /)
-      
-      ! Get the external normals
-      cell_data(i,3:4) = (/yb-ya, xa-xb/)
-      cell_data(i,5:6) = (/yc-yb, xb-xc/)
-      cell_data(i,7:8) = (/yd-yc, xc-xd/)
-      cell_data(i,9:10)= (/ya-yd, xd-xa/)
-      ! Switch the direction of the normals if pointing inwards
-      IF ((cell_data(i,3)*(xa-cell_data(i,1)) + cell_data(i,4)*(ya-cell_data(i,2)))<zero) then
-        cell_data(i,3:4) = -cell_data(i,3:4)
-      END IF 
-      IF ((cell_data(i,5)*(xb-cell_data(i,1)) + cell_data(i,6)*(yb-cell_data(i,2)))<zero) then
-        cell_data(i,5:6) = -cell_data(i,5:6)
-      END IF 
-      IF ((cell_data(i,7)*(xc-cell_data(i,1)) + cell_data(i,8)*(yc-cell_data(i,2)))<zero) then
-        cell_data(i,7:8) = -cell_data(i,7:8)
-      END IF 
-      IF ((cell_data(i,9)*(xd-cell_data(i,1)) + cell_data(i,10)*(yd-cell_data(i,2)))<zero) then
-        cell_data(i,9:10) = -cell_data(i,9:10)
-      END IF 
-      
-      ! Find the three 2D elements surrounding the current 2D element and fill cell_data_ind
-      CALL find_elem_surf(i,cell_data_ind(i,1),elem(i,1),elem(i,2))
-      CALL find_elem_surf(i,cell_data_ind(i,2),elem(i,2),elem(i,3))
-      CALL find_elem_surf(i,cell_data_ind(i,3),elem(i,3),elem(i,4))
-      CALL find_elem_surf(i,cell_data_ind(i,4),elem(i,4),elem(i,1))
-      
-      cell_node_ids(i,1,1:2) = (/ elem(i,1),elem(i,2) /)
-      cell_node_ids(i,2,1:2) = (/ elem(i,2),elem(i,3) /)
-      cell_node_ids(i,3,1:2) = (/ elem(i,3),elem(i,4) /)
-      cell_node_ids(i,4,1:2) = (/ elem(i,4),elem(i,1) /)
-      
-      ! Get area + perimeter + center
-      geom_data(i,1) = 0.5d00*ABS((xb-xa)*(yc-ya)-(xc-xa)*(yb-ya)) + 0.5d00*ABS((xc-xa)*(yd-ya)-(xd-xa)*(yc-ya))
-      geom_data(i,2) = SQRT((xa-xb)**2 + (ya-yb)**2) + SQRT((xb-xc)**2 + (yb-yc)**2) + &
-&                      SQRT((xc-xd)**2 + (yc-yd)**2) + SQRT((xa-xd)**2 + (ya-yd)**2)
-      geom_data(i,3:4) = cell_data(i,1:2)
-    END DO
-    cell_data_n(nbrTris+1:nbrTris+nbrQuads,1:8) = cell_data(nbrTris+1:nbrTris+nbrQuads,3:10)
-    
+    cell_data_n(1:nbrElem,1:8) = cell_data(1:nbrElem,3:10)
+        
     ! Second loop to compute the data for the internal/boundary edges
     DO i=1,nbrElem
       DO j=10,10+nbr_nodes_per_elem(i)-1
@@ -189,7 +141,7 @@ SUBROUTINE get_normal_to_cell()
              fnormal(nId,5) = 0.5d00*ABS((xb-xa)*(yc-ya)-(xc-xa)*(yb-ya))
                           
              fnormal_ind(nId,1) = i
-             CALL find_vector(front(:,4),i,front1,front2)
+             CALL find_vector(front(:,4),nbrFront,i,front1,front2)
              idx = 0
              IF (front2 .ne. 0) THEN ! 2D element with 2 boundary edges
                 ! Find which front1 / front2 is the current edge
@@ -206,7 +158,7 @@ SUBROUTINE get_normal_to_cell()
                 idx = front1
              END IF             
              fnormal_ind(nId,2) = front(idx,3)
-             CALL find_vector(CLTable(1,:),fnormal_ind(nId,2),front1,front2)
+             CALL find_vector(CLTable(1,:),5,fnormal_ind(nId,2),front1,front2)
              fnormal_ind(nId,3) = CLTable(2,front1)
              fnormal_ind(nId,4) = idx
              
@@ -272,9 +224,10 @@ SUBROUTINE get_normal_to_cell()
     ! edges(:,3:4) XY components of center of edge
     ! edges(:,5:6) Areas of subtriangles Lbc and Mbc located left and right to edge
     ! edges_ind(:,1:2) IDs of 2D elements located left and right of edge
+        
     edges     = internal(1:edgeId,1:6)
     edges_ind = internal_ind(1:edgeId,1:2)
-        
+    
     nbrInt = edgeId
     
     WRITE(*,104) nId

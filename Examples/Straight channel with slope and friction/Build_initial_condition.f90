@@ -77,9 +77,17 @@ SUBROUTINE write_initial_condition_gmsh()
     write(10,'(T1,A9)') "$Elements"
     write(10,'(T1,I9)') nbrElem+nbrFront
     write(10,'(T1,I9,2I2,I9,I2,2I9)') (i,1,2,front(i,3),1,front(i,1:2),i=1,nbrFront)    
-    IF (nbrTris.NE.0) write(10,'(T1,I9,2I2,I9,I2,3I9)') (i+nbrFront,2,2,elem(i,5),1,elem(i,1:3),i=1,nbrTris)
-    IF (nbrQuads.NE.0) write(10,'(T1,I9,2I2,I9,I2,4I9)') (i+nbrFront+nbrTris,3,2,elem(i+nbrTris,5),1,&
-&                                                         elem(i+nbrTris,1:4),i=1,nbrQuads)
+    DO i=1,nbrElem
+      IF (nbr_nodes_per_elem(i) .EQ. 3) THEN 
+        write(10,'(T1,I9,2I2,I9,I2,3I9)') i+nbrFront,2,2,elem(i,5),1,elem(i,1:3)
+      ELSE IF (nbr_nodes_per_elem(i) .EQ. 4) THEN 
+        write(10,'(T1,I9,2I2,I9,I2,4I9)') i+nbrFront,3,2,elem(i,5),1,&
+&                                                        elem(i,1:4)
+      END IF 
+    ENDDO    
+    ! IF (nbrTris.NE.0) write(10,'(T1,I9,2I2,I9,I2,3I9)') (i+nbrFront,2,2,elem(i,5),1,elem(i,1:3),i=1,nbrTris)
+    ! IF (nbrQuads.NE.0) write(10,'(T1,I9,2I2,I9,I2,4I9)') (i+nbrFront+nbrTris,3,2,elem(i+nbrTris,5),1,&
+! &                                                         elem(i+nbrTris,1:4),i=1,nbrQuads)
     write(10,'(T1,A12)') "$EndElements"
 
     !************************************* INITIAL HEIGHT

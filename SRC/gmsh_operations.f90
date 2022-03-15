@@ -82,7 +82,8 @@ END SUBROUTINE read_solution
 !SUBROUTINE write_gmsh
 !  Goal: write the solution in the Gmsh .msh format
 !##########################################################
-SUBROUTINE write_gmsh(U0,lengU0,file_gmsh,lengch,node,elem,front,nbrNodes,nbrElem,nbrTris,nbrQuads,nbrFront,k,count)
+SUBROUTINE write_gmsh(U0,lengU0,file_gmsh,lengch,node,elem,front,nbrNodes,nbrElem,nbrTris,nbrQuads,&
+&                     nbrFront,nbr_nodes_per_elem,k,count)
     USE MODULE_SHALLOW, only : kr,ki,ggrav,nbvar,eps
     IMPLICIT NONE
 
@@ -91,17 +92,22 @@ SUBROUTINE write_gmsh(U0,lengU0,file_gmsh,lengch,node,elem,front,nbrNodes,nbrEle
     INTEGER(ki), INTENT(IN) :: lengU0,lengch
     REAL(kr), INTENT(IN)    :: U0(lengU0)
     REAL(kr), INTENT(IN)    :: node(nbrNodes,2)
-    INTEGER(ki), INTENT(IN)    :: elem(nbrElem,5)
-    INTEGER(ki), INTENT(IN)    :: front(nbrFront,4)
+    INTEGER(ki), INTENT(IN) :: elem(nbrElem,5)
+    INTEGER(ki), INTENT(IN) :: front(nbrFront,4)
+    INTEGER(ki), INTENT(IN) :: nbr_nodes_per_elem(nbrElem)
     CHARACTER(LEN=lengch), INTENT(IN) :: file_gmsh
     
     ! Local parameters
-    INTEGER(ki) :: ierr, i, fin
+    INTEGER(ki) :: ierr, i, fin, numdigits
     REAL(kr) :: h, u, v
     REAL(kr), DIMENSION(1) :: Froude(1:nbrElem)
+    CHARACTER(LEN=2) :: numdig
     
     fin = 0
     
+    CALL get_number_digits_integer(nbrNodes,numdigits)
+    WRITE(numdig,'(A,I1)') 'I',numdigits+1
+        
     ! Write the mesh data (nodes and elements)
     IF (k==0) THEN
        OPEN(UNIT=10,FILE=file_gmsh,STATUS="replace",IOSTAT=ierr,FORM='formatted')
@@ -109,15 +115,20 @@ SUBROUTINE write_gmsh(U0,lengU0,file_gmsh,lengch,node,elem,front,nbrNodes,nbrEle
        WRITE(10,'(T1,A7)') "2.2 0 8"
        WRITE(10,'(T1,A14)') "$EndMeshFormat"
        WRITE(10,'(T1,A6)') "$Nodes"
-       WRITE(10,'(T1,I9)') nbrNodes
-       WRITE(10,'(T1,I9,2ES25.16E3,F4.1)') (i, node(i,:),0.,i=1,nbrNodes)
+       
+       WRITE(10,'(T1,'//numdig//')') nbrNodes
+       WRITE(10,'(T1,'//numdig//',2ES23.15E2,I2)') (i, node(i,:),0,i=1,nbrNodes)
        WRITE(10,'(T1,A9)') "$EndNodes"
        WRITE(10,'(T1,A9)') "$Elements"
-       WRITE(10,'(T1,I9)') nbrElem+nbrFront
-       WRITE(10,'(T1,I9,2I2,I9,I2,2I9)') (i,1,2,front(i,3),1,front(i,1:2),i=1,nbrFront)       
-       IF (nbrTris.NE.0) write(10,'(T1,I9,2I2,I9,I2,3I9)') (i+nbrFront,2,2,elem(i,5),1,elem(i,1:3),i=1,nbrTris)
-       IF (nbrQuads.NE.0) write(10,'(T1,I9,2I2,I9,I2,4I9)') (i+nbrFront+nbrTris,3,2,elem(i+nbrTris,5),1, &
-&                                                            elem(i+nbrTris,1:4),i=1,nbrQuads)
+       WRITE(10,'(T1,'//numdig//')') nbrElem+nbrFront
+       WRITE(10,'(T1,'//numdig//',2I2,'//numdig//',I2,2'//numdig//')') (i,1,2,front(i,3),1,front(i,1:2),i=1,nbrFront)       
+       DO i=1,nbrElem
+         IF (nbr_nodes_per_elem(i) .EQ. 3) THEN 
+           write(10,'(T1,'//numdig//',2I2,'//numdig//',I2,3'//numdig//')') i+nbrFront,2,2,elem(i,5),1,elem(i,1:3)
+         ELSE IF (nbr_nodes_per_elem(i) .EQ. 4) THEN 
+           write(10,'(T1,'//numdig//',2I2,'//numdig//',I2,4'//numdig//')') i+nbrFront,3,2,elem(i,5),1,elem(i,1:4)
+         END IF 
+       ENDDO  
        WRITE(10,'(T1,A12)') "$EndElements"
     ELSE
        OPEN(UNIT=10,FILE=file_gmsh,STATUS="old",ACCESS="append",IOSTAT=ierr,FORM='formatted')
@@ -129,12 +140,12 @@ SUBROUTINE write_gmsh(U0,lengU0,file_gmsh,lengch,node,elem,front,nbrNodes,nbrEle
     WRITE(10,'(T1,A1)') "1"
     WRITE(10,'(T1,A9)') '"Height"'
     WRITE(10,'(T1,A1)') "1"
-    WRITE(10,'(T1,I9)') k
+    WRITE(10,'(T1,'//numdig//')') k
     WRITE(10,'(T1,A1)') "3"
-    WRITE(10,'(T1,I9)') count
+    WRITE(10,'(T1,'//numdig//')') count
     WRITE(10,'(T1,A1)') "1"
-    WRITE(10,'(T1,I9)') nbrElem
-    WRITE(10,'(T1,I9,ES25.16E3)') (i+nbrFront, U0(i*nbvar-2),i=1,nbrElem)
+    WRITE(10,'(T1,'//numdig//')') nbrElem
+    WRITE(10,'(T1,'//numdig//',ES23.15E2)') (i+nbrFront, U0(i*nbvar-2),i=1,nbrElem)
     WRITE(10,'(T1,A15)') "$EndElementData"
     
     !*************************************
@@ -143,18 +154,18 @@ SUBROUTINE write_gmsh(U0,lengU0,file_gmsh,lengch,node,elem,front,nbrNodes,nbrEle
     WRITE(10,'(T1,A1)') "1"
     WRITE(10,'(T1,A10)') '"Velocity"'
     WRITE(10,'(T1,A1)') "1"
-    WRITE(10,'(T1,I9)') k
+    WRITE(10,'(T1,'//numdig//')') k
     WRITE(10,'(T1,A1)') "3"
-    WRITE(10,'(T1,I9)') count
+    WRITE(10,'(T1,'//numdig//')') count
     WRITE(10,'(T1,A1)') "3"
-    WRITE(10,'(T1,I9)') nbrElem
+    WRITE(10,'(T1,'//numdig//')') nbrElem
     DO i=1,nbrElem
        h = U0(i*nbvar-2)
        IF (h<eps) h = eps
        u = U0(i*nbvar-1)/h
        v = U0(i*nbvar)/h
        Froude(i) = sqrt(u*u+v*v)/sqrt(ggrav*h)
-       WRITE(10,'(T1,I9,2ES25.16E3,F4.1)') i+nbrFront, u, v, 0.
+       WRITE(10,'(T1,'//numdig//',2ES23.15E2,I2)') i+nbrFront, u, v, 0
     END DO
     WRITE(10,'(T1,A15)') "$EndElementData"
     
@@ -164,12 +175,12 @@ SUBROUTINE write_gmsh(U0,lengU0,file_gmsh,lengch,node,elem,front,nbrNodes,nbrEle
     WRITE(10,'(T1,A1)') "1"
     WRITE(10,'(T1,A8)') '"Froude"'
     WRITE(10,'(T1,A1)') "1"
-    WRITE(10,'(T1,I9)') k
+    WRITE(10,'(T1,'//numdig//')') k
     WRITE(10,'(T1,A1)') "3"
-    WRITE(10,'(T1,I9)') count
+    WRITE(10,'(T1,'//numdig//')') count
     WRITE(10,'(T1,A1)') "1"
-    WRITE(10,'(T1,I9)') nbrElem
-    WRITE(10,'(T1,I9,ES25.16E3)') (i+nbrFront, Froude(i),i=1,nbrElem)
+    WRITE(10,'(T1,'//numdig//')') nbrElem
+    WRITE(10,'(T1,'//numdig//',ES23.15E2)') (i+nbrFront, Froude(i),i=1,nbrElem)
     WRITE(10,'(T1,A15)') "$EndElementData"
     
     !*************************************
@@ -188,8 +199,8 @@ SUBROUTINE read_gmsh(U0,lengU0,mesh_file,lengch,node,elem,nbr_nodes_per_elem,fro
 
     ! Subroutine parameters
     INTEGER(ki), INTENT(OUT) :: ok
-    INTEGER(ki), INTENT(IN) :: nbrNodes,nbrElem,nbrTris,nbrQuads,nbrFront
-    INTEGER(ki), INTENT(IN) :: lengU0,lengch,skip_data
+    INTEGER(ki), INTENT(IN)  :: nbrNodes,nbrElem,nbrTris,nbrQuads,nbrFront
+    INTEGER(ki), INTENT(IN)  :: lengU0,lengch,skip_data
     REAL(kr), INTENT(OUT)    :: U0(lengU0)
     REAL(kr), INTENT(OUT)    :: node(nbrNodes,2)
     REAL(kr), INTENT(OUT)    :: depth(nbrElem)
@@ -201,12 +212,21 @@ SUBROUTINE read_gmsh(U0,lengU0,mesh_file,lengch,node,elem,nbr_nodes_per_elem,fro
 
     ! Local parameters
     CHARACTER(len=256)    :: line
-    INTEGER(ki) :: i, ierr, a, b, c, nbrElemTot=0,nbrNodeEdge=0
-    INTEGER(ki) :: istep
+    INTEGER(ki) :: i, ierr, a, b, c, d, e, nbrElemTot,nbrNodeEdge
+    INTEGER(ki) :: istep,entnump,entnumc,entnums
+    INTEGER(ki) :: nodesnument,surfnument,tag
+    INTEGER(ki) :: ind,indf,inde
     REAL(kr) :: header,tmp
-    LOGICAL :: header21 = .true.
     EXTERNAL :: find_elem_front, time_display
-
+    INTEGER(ki), ALLOCATABLE :: entities_curves(:,:)
+    INTEGER(ki), ALLOCATABLE :: entities_surfs(:,:)
+    
+    ind = 0
+    indf = 0
+    inde = 0
+    nbrElemTot = 0
+    nbrNodeEdge = 0
+    
     CALL sampletime(time_begin)
     ok = 1
     WRITE(*,*) "-------------------------------------------------------"
@@ -228,12 +248,16 @@ SUBROUTINE read_gmsh(U0,lengU0,mesh_file,lengch,node,elem,nbr_nodes_per_elem,fro
       ok = 0
       GOTO 100
     END IF
-
-    IF (header .GT. 2.1) header21 = .false.
+    
+    IF (header .GE. 2. .AND. header .LT. 4.0) THEN ! Format 2.1
+      GOTO 10
+    ELSE IF (header .GE. 4.0) THEN
+      GOTO 20
+    END IF
     
     istep = 2
     
-    DO WHILE (line .NE. "$Nodes")
+10  DO WHILE (line .NE. "$Nodes")
       READ(10,*) line
     END DO
 
@@ -259,39 +283,103 @@ SUBROUTINE read_gmsh(U0,lengU0,mesh_file,lengch,node,elem,nbr_nodes_per_elem,fro
     ! elem(:,1:4)   : node IDs composing the 2D element
     ! elem(:,5)     : physical tag of the 2D element
     
-    IF (header21) THEN  ! Read the boundary edges
-       READ(10,*) (a,a,a,front(i,3),a,a,front(i,1),front(i,2),i=1,nbrFront)
-    ELSE
-       READ(10,*) (a,a,a,front(i,3),a,front(i,1),front(i,2),i=1,nbrFront)
-    END IF
-    WRITE(*,102) nbrFront
+    READ(10,*) (a,a,a,front(i,3),a,front(i,1),front(i,2),i=1,nbrFront)
     
-    IF (header21) THEN  ! Read the 2D elements
-       IF (nbrTris.GT.0) THEN
-         READ(10,*) (a,a,a,elem(i,5),a,a,elem(i,1),elem(i,2),elem(i,3),i=1,nbrTris) ! Triangles
-       ENDIF
-       IF (nbrQuads.GT.0) THEN
-         READ(10,*) (a,a,a,elem(i,5),a,a,elem(i,1),elem(i,2),elem(i,3),elem(i,4),i=nbrTris+1,nbrTris+nbrQuads) ! Quadrangles
-       ENDIF
-    ELSE
-       IF (nbrTris.GT.0) THEN
-         READ(10,*) (a,a,a,elem(i,5),a,elem(i,1),elem(i,2),elem(i,3),i=1,nbrTris) ! Triangles
-       ENDIF
-       IF (nbrQuads.GT.0) THEN
-         READ(10,*) (a,a,a,elem(i,5),a,elem(i,1),elem(i,2),elem(i,3),elem(i,4),i=nbrTris+1,nbrTris+nbrQuads) ! Quadrangles
-       ENDIF
-    END IF
-    DO i=1,nbrTris
-      nbr_nodes_per_elem(i) = 3
+    DO i=1,nbrElem
+      READ(10,*) a,inde
+      IF ( inde .EQ. 2 ) THEN
+        nbr_nodes_per_elem(i) = 3
+        BACKSPACE 10
+        READ(10,*) a,a,a,elem(i,5),a,elem(i,1),elem(i,2),elem(i,3)
+      ELSE IF (inde .EQ. 3) THEN
+        nbr_nodes_per_elem(i) = 4
+        BACKSPACE 10
+        READ(10,*) a,a,a,elem(i,5),a,elem(i,1),elem(i,2),elem(i,3),elem(i,4)
+      END IF
+    END DO
+    
+    GOTO 50
+    
+20  DO WHILE (line .NE. "$Entities")
+      READ(10,*) line
+    END DO
+    
+    READ(10,*) entnump,entnumc,entnums
+    
+    ALLOCATE( entities_curves( 1:entnumc , 2 ) )
+    ALLOCATE( entities_surfs( 1:entnums , 2 ) )
+    
+    DO i=1,entnump
+     READ(10,*)
     ENDDO
-    DO i=nbrTris+1,nbrTris+nbrQuads
-      nbr_nodes_per_elem(i) = 4
+    DO i=1,entnumc
+      READ(10,*) entities_curves(i,1),tmp,tmp,tmp,tmp,tmp,tmp,a,entities_curves(i,2)
     ENDDO
+    DO i=1,entnums
+      READ(10,*) entities_surfs(i,1),tmp,tmp,tmp,tmp,tmp,tmp,a,entities_surfs(i,2)
+    ENDDO
+    
+    DO WHILE (line .NE. "$Nodes")
+      READ(10,*) line
+    END DO
+    READ(10,*) nodesnument
+    
+    DO i=1,nodesnument
+    ! Loop on the number of entities inside the group Nodes
+      READ(10,*) a,a,a,b
+      DO c=1,b
+        READ(10,*) 
+      END DO
+      DO c=1,b
+        READ(10,*) node(ind+c,1), node(ind+c,2)
+      END DO
+      ind = ind + b
+    END DO
+    
+    DO WHILE (line .NE. "$Elements")
+      READ(10,*) line
+    END DO
+    READ(10,*) surfnument
+      
+    DO i=1,surfnument
+    ! Loop on the number of entities inside the group Elements
+      READ(10,*) a,tag,ind,b
+      DO c=1,b
+        IF (ind .EQ. 1) THEN ! Front
+          indf = indf + 1
+          READ(10,*) a,front(indf,1),front(indf,2)
+          CALL find_vector(entities_curves(:,1),entnumc,tag,d,e)
+          front(indf,3) = entities_curves(d,2)
+          
+        ELSE IF (ind .EQ. 2) THEN ! Triangle
+          inde = inde + 1
+          nbr_nodes_per_elem(inde) = 3
+          READ(10,*) a,elem(inde,1),elem(inde,2),elem(inde,3)
+          CALL find_vector(entities_surfs(:,1),entnums,tag,d,e)
+          elem(inde,5) = entities_surfs(d,2)
+          
+        ELSE IF (ind .EQ. 3) THEN ! Quadrangle
+          inde = inde + 1
+          nbr_nodes_per_elem(inde) = 4
+          READ(10,*) a,elem(inde,1),elem(inde,2),elem(inde,3),elem(inde,4)
+          CALL find_vector(entities_surfs(:,1),entnums,tag,d,e)
+          elem(inde,5) = entities_surfs(d,2)
+          
+        END IF
+        
+      END DO
+    END DO
+    
+    DEALLOCATE( entities_curves , entities_surfs )
+    
+    GOTO 50
+    
+50  WRITE(*,102) nbrFront
     WRITE(*,103) nbrTris
     WRITE(*,104) nbrQuads
 
     DO i=1,nbrFront
-       CALL find_elem_front(i,front(i,4))
+      CALL find_elem_front(i,front(i,4))
     END DO
     
     IF (skip_data.EQ.1) GOTO 100
@@ -437,25 +525,25 @@ SUBROUTINE browse_gmsh(mesh_file,lengch,nbrNodes,nbrElem,nbrTris,nbrQuads,nbrFro
 
     ! Local parameters
     CHARACTER(len=256)    :: line
-    INTEGER(ki) :: i, j, ierr, a, b, c, nbrElemTot=0,nbrNodeEdge=0
-    INTEGER(ki) :: istep
+    INTEGER(ki) :: i, j, ierr, a, b, c
+    INTEGER(ki) :: nbrEntities,nbrElemTot,nbrNodeEdge
     REAL(kr) :: header,tmp
-    LOGICAL :: header21 = .true.
     EXTERNAL :: find_elem_front, time_display
 
     ok = 1
-    istep = 1
     nbrNodes = 0
     nbrElem = 0
     nbrTris= 0
     nbrQuads = 0
     nbrFront = 0
+    nbrElemTot = 0
+    nbrNodeEdge = 0
     
     OPEN(UNIT=10,FILE=mesh_file,STATUS="old",IOSTAT=ierr,FORM='formatted')
     IF (ierr .NE. 0) THEN
       WRITE(*,*) "Error occuring : file '",TRIM(mesh_file),"' not found "
       ok = 0
-      GOTO 100
+      GOTO 200
     END IF
 
     READ(10,*) line, header, b, c
@@ -463,14 +551,16 @@ SUBROUTINE browse_gmsh(mesh_file,lengch,nbrNodes,nbrElem,nbrTris,nbrQuads,nbrFro
     IF (header .LT. 2.) THEN
       WRITE(*,*) "Error : wrong format for gmsh data"
       ok = 0
-      GOTO 100
+      GOTO 200
     END IF
-
-    IF (header .GT. 2.1) header21 = .false.
     
-    istep = 2
+    IF (header .GE. 2. .AND. header .LT. 4.0) THEN ! Format 2.1
+      GOTO 110
+    ELSE IF (header .GE. 4.0) THEN
+      GOTO 120
+    END IF
     
-    DO WHILE (line .NE. "$Nodes")
+110 DO WHILE (line .NE. "$Nodes")
       READ(10,*) line
     END DO
 
@@ -484,19 +574,75 @@ SUBROUTINE browse_gmsh(mesh_file,lengch,nbrNodes,nbrElem,nbrTris,nbrQuads,nbrFro
     
     DO j=1,nbrElemTot
       READ(10,*) a,i
-      IF (i==1) THEN
+      IF (i .EQ. 1) THEN
         nbrFront = nbrFront + 1
-      ELSE IF (i==2) THEN
+      ELSE IF (i .EQ. 2) THEN
         nbrTris = nbrTris + 1
-      ELSE IF (i==3) THEN
+      ELSE IF (i .EQ. 3) THEN
         nbrQuads = nbrQuads + 1
-      ELSE IF (i==15) THEN
+      ELSE IF (i .EQ. 15) THEN
         nbrNodeEdge = nbrNodeEdge + 1
       END IF
     END DO
-    nbrElem = nbrTris + nbrQuads
+    GOTO 200
+    
+120 DO WHILE (line .NE. "$Nodes")
+      READ(10,*) line
+    END DO
 
-100 CLOSE(UNIT=10)
+    READ(10,*) a,nbrNodes
+    
+    DO WHILE (line .NE. "$Elements")
+      READ(10,*) line
+    END DO
+
+    READ(10,*) nbrEntities,nbrElemTot
+    
+    DO j=1,nbrEntities
+      READ(10,*) a,a,i,b
+      
+      IF (i .EQ. 1) THEN
+        nbrFront = nbrFront + b
+      ELSE IF (i .EQ. 2) THEN
+        nbrTris = nbrTris + b
+      ELSE IF (i .EQ. 3) THEN
+        nbrQuads = nbrQuads + b
+      ELSE IF (i .EQ. 15) THEN
+        nbrNodeEdge = nbrNodeEdge + b
+      END IF
+      
+      DO c=1,b
+         READ(10,*) a
+      ENDDO
+      
+    ENDDO
+    
+    GOTO 200
+
+200 nbrElem = nbrTris + nbrQuads
+    CLOSE(UNIT=10)
     
 END SUBROUTINE browse_gmsh
+
+SUBROUTINE get_number_digits_integer(input,num_digits)
+    USE MODULE_SHALLOW, only : ki
+    IMPLICIT NONE
     
+    ! Subroutine parameters
+    INTEGER(ki), INTENT(IN)  :: input
+    INTEGER(ki), INTENT(OUT) :: num_digits
+
+    ! Local parameters
+    INTEGER(ki) :: modul,div
+    
+    num_digits = 0
+    div = 1
+    modul = input / div
+    
+    DO WHILE (modul.NE.0)
+      div = div * 10
+      modul = input / div
+      num_digits = num_digits + 1      
+    END DO
+    
+END SUBROUTINE get_number_digits_integer
