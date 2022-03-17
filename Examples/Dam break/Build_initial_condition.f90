@@ -56,175 +56,85 @@ END PROGRAM
 
 ! ******************************************************************************
 SUBROUTINE write_initial_condition_gmsh()
-    use module_shallow
-    implicit none
+    USE module_shallow
+    IMPLICIT NONE
 
-    integer(ki) :: ierr, i, wall_type, edge_id
-    real(kr) :: h, hleft,hright, u, v, h_inlet, u_inlet, v_inlet, h_outlet
-    real(kr) :: xMax,xMin,xCenter,circleRadius, circleShiftY, x1, x2, xe
-    real(kr) :: slope
-    real(kr) :: arrayout(1:nbrElem)
+    INTEGER(ki) :: ierr, i, numdigits
+    CHARACTER(LEN=2) :: numdig
+    CHARACTER(LEN=9) :: formatreal
+    REAL(kr) :: height_init(nbrElem),depth_init(nbrElem)
+    REAL(kr) :: velocity_init(nbrElem,2)
+    REAL(kr) :: height_BC(nbrFront),velocity_BC(nbrFront,2)
             
-    open(unit=10,file=file_gmsh,status="replace",iostat=ierr,form='formatted')
-    write(10,'(T1,A11)') "$MeshFormat"
-    write(10,'(T1,A7)') "2.2 0 8"
-    write(10,'(T1,A14)') "$EndMeshFormat"
-    write(10,'(T1,A6)') "$Nodes"
-    write(10,'(T1,I9)') nbrNodes
-    write(10,'(T1,I9,2ES24.16E2,F4.1)') (i, node(i,:),0.,i=1,nbrNodes)
-    write(10,'(T1,A9)') "$EndNodes"
-    write(10,'(T1,A9)') "$Elements"
-    write(10,'(T1,I9)') nbrElem+nbrFront
-    write(10,'(T1,I9,2I2,I9,I2,2I9)') (i,1,2,front(i,3),1,front(i,1:2),i=1,nbrFront)    
-    DO i=1,nbrElem
-      IF (nbr_nodes_per_elem(i) .EQ. 3) THEN 
-        write(10,'(T1,I9,2I2,I9,I2,3I9)') i+nbrFront,2,2,elem(i,5),1,elem(i,1:3)
-      ELSE IF (nbr_nodes_per_elem(i) .EQ. 4) THEN 
-        write(10,'(T1,I9,2I2,I9,I2,4I9)') i+nbrFront,3,2,elem(i,5),1,&
-&                                                        elem(i,1:4)
-      END IF 
-    ENDDO    
-    ! IF (nbrTris.NE.0) write(10,'(T1,I9,2I2,I9,I2,3I9)') (i+nbrFront,2,2,elem(i,5),1,elem(i,1:3),i=1,nbrTris)
-    ! IF (nbrQuads.NE.0) write(10,'(T1,I9,2I2,I9,I2,4I9)') (i+nbrFront+nbrTris,3,2,elem(i+nbrTris,5),1,&
-! &                                                         elem(i+nbrTris,1:4),i=1,nbrQuads)
-    write(10,'(T1,A12)') "$EndElements"
+    CALL get_number_digits_integer(nbrNodes,numdigits)
+    WRITE(numdig,'(A,I1)') 'I',numdigits+1
 
-    !************************************* INITIAL HEIGHT
-    write(10,'(T1,A12)') "$ElementData"
-    write(10,'(T1,A1)') "1"
-    write(10,'(T1,A9)') '"Height"'
-    write(10,'(T1,A1)') "1"
-    write(10,'(T1,I9)') 0
-    write(10,'(T1,A1)') "3"
-    write(10,'(T1,I9)') 0
-    write(10,'(T1,A1)') "1"
-    write(10,'(T1,I9)') nbrElem
-    
-    arrayout = 0.d00
-    
+    formatreal = 'ES24.15E3'
+
+    !************************************* INITIAL HEIGHT    
+    height_init = 0.0d00    
     DO i=1,nbrElem
-        IF (elem(i,4).eq.22) THEN
-           arrayout(i) = 5.0d0
-        ELSEIF (elem(i,4).eq.23) THEN
-           arrayout(i) = 10.0d0
-        ENDIF
+      IF (elem(i,5).eq.22) THEN
+        height_init(i) = 5.0d0
+      ELSEIF (elem(i,5).eq.23) THEN
+        height_init(i) = 10.0d0
+      ENDIF
     ENDDO
     
-    write(10,'(T1,I9,ES24.16E2)') (i+nbrFront, arrayout(i),i=1,nbrElem)
-    write(10,'(T1,A15)') "$EndElementData"
-    
     !************************************* INITIAL VELOCITY
-    write(10,'(T1,A12)') "$ElementData"
-    write(10,'(T1,A1)') "1"
-    write(10,'(T1,A10)') '"Velocity"'
-    write(10,'(T1,A1)') "1"
-    write(10,'(T1,I9)') 0
-    write(10,'(T1,A1)') "3"
-    write(10,'(T1,I9)') 0
-    write(10,'(T1,A1)') "3"
-    write(10,'(T1,I9)') nbrElem
-    
-    do i=1,nbrElem
-        U = 0.d0
-        V = 0.d0
-        write(10,'(T1,I9,2ES24.16E2,F4.1)') i+nbrFront, U, V, 0.
-    end do
-    
-    write(10,'(T1,A15)') "$EndElementData"
+    velocity_init = 0.0d00
 
     !************************************* Bathymetric depth
-    write(10,'(T1,A12)') "$ElementData"
-    write(10,'(T1,A1)') "1"
-    write(10,'(T1,A9)') '"Depth"'
-    write(10,'(T1,A1)') "1"
-    write(10,'(T1,I9)') 0
-    write(10,'(T1,A1)') "3"
-    write(10,'(T1,I9)') 0
-    write(10,'(T1,A1)') "1"
-    write(10,'(T1,I9)') nbrElem
-    
-    arrayout = 0.d0
-	
-    write(10,'(T1,I9,ES24.16E2)') (i+nbrFront, arrayout(i),i=1,nbrElem)
-    write(10,'(T1,A15)') "$EndElementData"
+    depth_init = 0.0d00
     
     !************************************* Boundary Condition - Height 
-    write(10,'(T1,A12)') "$ElementData"
-    write(10,'(T1,A1)') "1"
-    write(10,'(T1,A14)') '"Height_inlet"'
-    write(10,'(T1,A1)') "1"
-    write(10,'(T1,I9)') 0
-    write(10,'(T1,A1)') "3"
-    write(10,'(T1,I9)') 0
-    write(10,'(T1,A1)') "1"
-    write(10,'(T1,I9)') nbrFront
-    
-    do i=1,nbrFront
-       h_inlet = 0.d0
-       write(10,'(T1,I9,2X,ES24.16E2)') i, h_inlet    
-    end do
-    
-    write(10,'(T1,A15)') "$EndElementData"
+    height_BC = 0.0d00
     
     !************************************* Boundary Condition - Velocity 
-    write(10,'(T1,A12)') "$ElementData"
-    write(10,'(T1,A1)') "1"
-    write(10,'(T1,A16)') '"Velocity_inlet"'
-    write(10,'(T1,A1)') "1"
-    write(10,'(T1,I9)') 0
-    write(10,'(T1,A1)') "3"
-    write(10,'(T1,I9)') 0
-    write(10,'(T1,A1)') "3"
-    write(10,'(T1,I9)') nbrFront
-    
-    do i=1,nbrFront
-	   u_inlet = 0.d0
-       v_inlet = 0.d0
-       write(10,'(T1,I9,1X,2ES24.16E2,F4.1)') i, u_inlet, v_inlet, 0.
-    end do
-    
-    write(10,'(T1,A15)') "$EndElementData"
-    
+    velocity_BC = 0.0d00
+        
     !*************************************
-    close(unit=10)
+    
+    CALL write_gmsh_initial_solution(height_init, velocity_init, depth_init, &
+&                                    height_BC, velocity_BC)
 
-end subroutine write_initial_condition_gmsh
+END SUBROUTINE write_initial_condition_gmsh
 
 ! *******************************************************************
-subroutine sampletime(counter)
-    use module_shallow, only : kr,ki
-    implicit none
+SUBROUTINE sampletime(counter)
+    USE module_shallow, ONLY : kr,ki
+    IMPLICIT NONE
           
     ! variables passed through header
-    integer(ki) ::counter
+    INTEGER(ki) ::counter
       
     ! variables declared locally
-    integer(ki) ::rate, contmax
+    INTEGER(ki) ::rate, contmax
  
     ! Determine CPU time
-    call system_clock(counter, rate, contmax )
+    CALL SYSTEM_CLOCK(counter, rate, contmax )
 !-----------------------------------------------------------------------
-end subroutine sampletime
+END SUBROUTINE sampletime
 !-----------------------------------------------------------------------
 
 ! *******************************************************************
 SUBROUTINE time_display
-    use module_shallow
-    implicit none
+    USE module_shallow
+    IMPLICIT NONE
 
-    real(kr) :: time
-    integer(ki) :: job, cont3
-    integer(ki) :: rate, contmax, itime
+    REAL(kr) :: time
+    INTEGER(ki) :: job, cont3
+    INTEGER(ki) :: rate, contmax, itime
 
-    call system_clock(cont3, rate, contmax )
-    if (time_end .ge. time_begin) then
+    CALL SYSTEM_CLOCK(cont3, rate, contmax )
+    IF (time_end .ge. time_begin) THEN
        itime=time_end-time_begin
-    else
+    ELSE
        itime=(contmax - time_begin) + (time_end + 1)
-    endif
+    ENDIF
 
-    time = dfloat(itime) / dfloat(rate)
+    time = DFLOAT(itime) / DFLOAT(rate)
 
-    write(*,'(a,f10.4)') " Time needed (s) :            ",time
+    WRITE(*,'(a,f10.4)') " Time needed (s) :            ",time
 
-end subroutine time_display
+END SUBROUTINE time_display
