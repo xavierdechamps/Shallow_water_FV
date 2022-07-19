@@ -59,10 +59,9 @@ SUBROUTINE write_initial_condition_gmsh()
     USE module_shallow
     IMPLICIT NONE
 
-    INTEGER(ki) :: ierr, i, wall_type, edge_id, numdigits
+    INTEGER(ki) :: ierr, i, numdigits
     CHARACTER(LEN=2) :: numdig
     CHARACTER(LEN=9) :: formatreal
-    REAL(kr) :: hi, ho, hleft, ui, Q, B, xMax, xMin, xe, slope
     REAL(kr) :: height_init(nbrElem),depth_init(nbrElem)
     REAL(kr) :: velocity_init(nbrElem,2)
     REAL(kr) :: height_BC(nbrFront),velocity_BC(nbrFront,2)
@@ -72,59 +71,28 @@ SUBROUTINE write_initial_condition_gmsh()
 
     formatreal = 'ES24.15E3'
 
-    !************************************* INITIAL HEIGHT
-    
-    hi = 4.543260901d00 ! normal depth for b1=40, Q=500, S0=0.002, n=0.0389
-    ho = 2.5160369d00   ! critical depth
-    Q  = 500.0d00
-    B  = 40.0d00
-    ui = Q / ( B * hi )
-    
-    height_init = 0.0d00
+    !************************************* INITIAL HEIGHT    
+    height_init = 0.0d00    
     DO i=1,nbrElem
-      height_init(i) = hi         
+      IF (elem(i,5).eq.22) THEN
+        height_init(i) = 0.0d0
+      ELSEIF (elem(i,5).eq.23) THEN
+        height_init(i) = 5.0d0
+      ENDIF
     ENDDO
     
     !************************************* INITIAL VELOCITY
     velocity_init = 0.0d00
-    DO i=1,nbrElem
-      velocity_init(i,1) = ui
-    END DO
 
     !************************************* Bathymetric depth
-    xMin = minval(node(:,1) )
-    hleft = 0.0d00
-    slope = 0.002d0 ! = Dy / Dx
-    DO i=1,nbrElem
-! X-coordinate of the center of the cell
-      IF (nbr_nodes_per_elem(i) .EQ. 3) THEN
-        xe = (node(elem(i,1),1)+node(elem(i,2),1)+node(elem(i,3),1) ) / 3.0d00
-      ELSE IF (nbr_nodes_per_elem(i) .EQ. 4) THEN
-        xe = (node(elem(i,1),1)+node(elem(i,2),1)+node(elem(i,3),1)+node(elem(i,4),1) ) * 0.25d00
-      END IF
-! Linear slope
-      depth_init(i) = hleft - slope*(xe-xMin)
-    ENDDO
+    depth_init = 0.0d00
     
     !************************************* Boundary Condition - Height 
     height_BC = 0.0d00
-    DO i=1,nbrFront
-      IF ( front(i,3).eq.1 ) THEN ! Inlet 
-        height_BC(i) = hi
-      ELSE IF ( front(i,3).eq.2 ) THEN ! Outlet 
-        height_BC(i) = ho
-      ENDIF
-    END DO
     
     !************************************* Boundary Condition - Velocity 
     velocity_BC = 0.0d00
-    DO i=1,nbrFront
-! U = q / h = Q / (B * h)
-      IF ( front(i,3).eq.1 ) THEN ! Inlet 
-        velocity_BC(i,1) = ui
-      ENDIF
-    END DO
-    
+        
     !*************************************
     
     CALL write_gmsh_initial_solution(height_init, velocity_init, depth_init, &
