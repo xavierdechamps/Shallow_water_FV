@@ -224,11 +224,12 @@ SUBROUTINE get_normal_to_cell()
     ! edges(:,3:4) XY components of center of edge
     ! edges(:,5:6) Areas of subtriangles Lbc and Mbc located left and right to edge
     ! edges_ind(:,1:2) IDs of 2D elements located left and right of edge
-        
-    edges     = internal(1:edgeId,1:6)
-    edges_ind = internal_ind(1:edgeId,1:2)
-    
     nbrInt = edgeId
+    ALLOCATE(edges(1:nbrInt,1:6))
+    ALLOCATE(edges_ind(1:nbrInt,1:2))
+      
+    edges     = internal(1:nbrInt,1:6)
+    edges_ind = internal_ind(1:nbrInt,1:2)
     
     WRITE(*,104) nId
     WRITE(*,105) nbrInt

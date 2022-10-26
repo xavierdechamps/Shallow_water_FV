@@ -54,8 +54,10 @@ SUBROUTINE mem_allocate(node,front,elem,nbr_nodes_per_elem,U0,depth,BoundCond,dt
       ALLOCATE(fnormal(1:nbrFront,1:5))
       ALLOCATE(fnormal_ind(1:nbrFront,1:4))
       ALLOCATE(cell_data_n(1:nbrElem,1:8))
-      ALLOCATE(edges(1:nbrInt,1:6))
-      ALLOCATE(edges_ind(1:nbrInt,1:2))
+      
+      ! These 2 are allocated in get_normal_to_cell
+      ! ALLOCATE(edges(1:nbrInt,1:6))
+      ! ALLOCATE(edges_ind(1:nbrInt,1:2))
     ENDIF
 END SUBROUTINE mem_allocate
 

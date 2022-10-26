@@ -381,7 +381,7 @@ SUBROUTINE read_gmsh(U0,lengU0,mesh_file,lengch,node,elem,nbr_nodes_per_elem,fro
     WRITE(*,104) nbrQuads
 
     DO i=1,nbrFront
-      CALL find_elem_front(i,front(i,4))
+      CALL find_elem_front(i,front(i,4),front,elem,nbrFront,nbrElem)
     END DO
     
     IF (skip_data.EQ.1) GOTO 100
@@ -389,7 +389,7 @@ SUBROUTINE read_gmsh(U0,lengU0,mesh_file,lengch,node,elem,nbr_nodes_per_elem,fro
     ! Initial height
     istep = 4
     
-    dataname = "initial height"
+    dataname = "Height"
     DO WHILE (line .NE. "$ElementData")
       READ(10,*,END=90) line
     END DO
@@ -416,7 +416,7 @@ SUBROUTINE read_gmsh(U0,lengU0,mesh_file,lengch,node,elem,nbr_nodes_per_elem,fro
     
     istep = 5
     
-    dataname = "initial velocity"
+    dataname = "Velocity"
     DO WHILE (line .NE. "$ElementData")
       READ(10,*,END=90) line
     END DO
@@ -448,7 +448,7 @@ SUBROUTINE read_gmsh(U0,lengU0,mesh_file,lengch,node,elem,nbr_nodes_per_elem,fro
     
     istep = 6
     
-    dataname = "depth"
+    dataname = "Depth"
     DO WHILE (line .NE. "$ElementData")
       READ(10,*,END=90) line
     END DO
@@ -475,14 +475,14 @@ SUBROUTINE read_gmsh(U0,lengU0,mesh_file,lengch,node,elem,nbr_nodes_per_elem,fro
     
     istep = 7
     
-    dataname = "boundary condition on the height"
+    dataname = "Height_inlet"
     DO WHILE (line .NE. "$ElementData")
       READ(10,*,END=90) line
     END DO
     DO i=1,2
       READ(10,*,END=90) line
     ENDDO
-    IF (TRIM(line) .NE. 'Height_boundary') GO TO 90
+    IF (TRIM(line) .NE. 'Height_inlet') GO TO 90
     DO i=1,5
       READ(10,*,END=90) line
     ENDDO
@@ -502,14 +502,14 @@ SUBROUTINE read_gmsh(U0,lengU0,mesh_file,lengch,node,elem,nbr_nodes_per_elem,fro
     
     istep = 8
     
-    dataname = "boundary condition on the velocity"
+    dataname = "Velocity_inlet"
     DO WHILE (line .NE. "$ElementData")
       READ(10,*,END=90) line
     END DO
     DO i=1,2
       READ(10,*,END=90) line
     ENDDO
-    IF (TRIM(line) .NE. 'Velocity_boundary') GO TO 90
+    IF (TRIM(line) .NE. 'Velocity_inlet') GO TO 90
     DO i=1,5
       READ(10,*,END=90) line
     ENDDO
@@ -529,6 +529,7 @@ SUBROUTINE read_gmsh(U0,lengU0,mesh_file,lengch,node,elem,nbr_nodes_per_elem,fro
  90 ok = 0
     WRITE(*,*) "    <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
     WRITE(*,*) "Error reading the following data: ", TRIM(dataname)
+    WRITE(*,*) "Read the following data in the file: ", TRIM(line)
     WRITE(*,*) "Check that the name of the mesh file points to the correct file"
     WRITE(*,*) "    <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
     
@@ -678,7 +679,6 @@ SUBROUTINE browse_gmsh(mesh_file,lengch,nbrNodes,nbrElem,nbrTris,nbrQuads,nbrFro
     INTEGER(ki) :: i, j, ierr, a, b, c
     INTEGER(ki) :: nbrEntities,nbrElemTot,nbrNodeEdge
     REAL(kr) :: header,tmp
-    EXTERNAL :: find_elem_front, time_display
 
     ok = 1
     nbrNodes = 0

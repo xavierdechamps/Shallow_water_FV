@@ -2,12 +2,14 @@
 ! SUBROUTINE find_elem_front
 !  Goal: get the ID of the 2D element linked to a boundary edge elem_front
 !##########################################################
-SUBROUTINE find_elem_front(elem_front,elem_surf)
-    USE module_shallow
+SUBROUTINE find_elem_front(elem_front,elem_surf,front,elem,nbrFront,nbrElem)
+    USE module_shallow, only : kr,ki
     IMPLICIT NONE
 
     ! Subroutine parameters
-    INTEGER(ki), INTENT(IN) :: elem_front
+    INTEGER(ki), INTENT(IN) :: elem_front,nbrFront,nbrElem
+    INTEGER(ki), INTENT(IN) :: front(nbrFront,4)
+    INTEGER(ki), INTENT(IN) :: elem(nbrElem,5)
     INTEGER(ki), INTENT(OUT):: elem_surf
 
     ! Local parameters
