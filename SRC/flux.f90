@@ -32,7 +32,7 @@ SUBROUTINE flux(Hvec,Source_sf, Q)
     ! Loop on the internal edges
 !$OMP PARALLEL &
 !$OMP& default (shared) &
-!$OMP& private (temp,Fup,idL,idR,SL,SR,qL,qR,n,ds,FL,FR,Fav,qAv,dij,Hi,Hj,sourceloc_s,sourceloc_f) &
+!$OMP& private (temp,Fup,idL,idR,SL,SR,qL,qR,j,n,ds,FL,FR,Fav,qAv,dij,Hi,Hj,sourceloc_s,sourceloc_f) &
 !$OMP& reduction(+: Hvec,Source_sf)
 !    chunck = nbrInt / omp_get_num_threads()
 !$OMP DO
@@ -378,6 +378,7 @@ END SUBROUTINE upwind_term
 
 SUBROUTINE getGradients(q,gradX,gradY)
     USE module_shallow
+    USE OMP_LIB
     IMPLICIT NONE
     
     ! Subroutine parameters
@@ -389,9 +390,13 @@ SUBROUTINE getGradients(q,gradX,gradY)
     REAL(kr)    :: Ixx,Iyy,Ixy,D
     REAL(kr), DIMENSION(nbvar) :: Jx,Jy
     
-    gradX = zero
+    gradX = zero 
     gradY = zero
     
+!$OMP PARALLEL &
+!$OMP& default (shared) &
+!$OMP& private (Ixx,Iyy,Ixy,Jx,Jy,D,j,k,IDj) 
+!$OMP DO
     DO i=1,nbrElem
       Ixx = zero
       Iyy = zero
@@ -417,11 +422,14 @@ SUBROUTINE getGradients(q,gradX,gradY)
       ENDDO
       
     ENDDO
+!$OMP END DO
+!$OMP END PARALLEL
 
 END SUBROUTINE getGradients
 
 SUBROUTINE applyTVD_Gradients(gradX,gradY)
     USE module_shallow
+    USE OMP_LIB
     IMPLICIT NONE
     
     ! Subroutine parameters
@@ -447,6 +455,10 @@ SUBROUTINE applyTVD_Gradients(gradX,gradY)
        signY = -1.d00
     END WHERE
     
+!$OMP PARALLEL &
+!$OMP& default (shared) &
+!$OMP& private (minVx,minVy,minSVx,minSVy,maxSVx,maxSVy,j,IDj,k,IDk) 
+!$OMP DO
     DO i=1,nbrElem
       minVx  = 1.E16
       minVy  = 1.E16
@@ -474,6 +486,8 @@ SUBROUTINE applyTVD_Gradients(gradX,gradY)
       ENDDO
       
     ENDDO
+!$OMP END DO
+!$OMP END PARALLEL
     
     gradX = gradXlim
     gradY = gradYlim
