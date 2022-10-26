@@ -9,7 +9,7 @@ PROGRAM GET_RELATIVE_ERROR_THEORY
     ! Get the number of arguments
     IF(COMMAND_ARGUMENT_COUNT().NE.1)THEN
       WRITE(*,*) "Incorrect number of arguments. Please launch the program as"
-      WRITE(*,*) "build_initial_condition   parameter_file"
+      WRITE(*,*) "get_relative_error_theory   parameter_file"
       GOTO 200
     ENDIF 
     CALL get_command_argument(1,param_file)
@@ -30,7 +30,7 @@ PROGRAM GET_RELATIVE_ERROR_THEORY
     
     ! Allocate the memory for the arrays
     CALL mem_allocate(node,front,elem,nbr_nodes_per_elem,U0,depth,BoundCond,dt,Source,&
-&                     edges,fnormal,geom_data,cell_data_n,edges_ind,fnormal_ind,&
+&                     edges,fnormal,geom_data,geom_data_ind,cell_data_n,edges_ind,fnormal_ind,&
 &                     nbvar*nbrElem,nbrNodes,nbrElem,nbrFront,nbrInt,0)
 
     ! Read the mesh and the initial solution / boundary conditions
@@ -58,7 +58,7 @@ PROGRAM GET_RELATIVE_ERROR_THEORY
     
     ! Deallocate the memory for the arrays
     CALL mem_deallocate(node,front,elem,nbr_nodes_per_elem,U0,depth,BoundCond,dt,Source,&
-&                       edges,fnormal,geom_data,cell_data_n,edges_ind,fnormal_ind)
+&                       edges,fnormal,geom_data,geom_data_ind,cell_data_n,edges_ind,fnormal_ind)
     
 200 CONTINUE
     WRITE(*,*) "End of the program"

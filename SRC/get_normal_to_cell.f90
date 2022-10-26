@@ -41,6 +41,7 @@ SUBROUTINE get_normal_to_cell()
     ! geom_data(:,1)   : area of element
     ! geom_data(:,2)   : perimeter of element
     ! geom_data(:,3:4) : XY coordinates of center of element
+    ! geom_data_ind(:,1:4) : IDs of the 4 neighbour cells (col 4 is -1 if cell is a triangle)
     
     ! fnormal(:,1:2)   : XY components of normal to boundary edge
     ! fnormal(:,3:4)   : XY components of center of boundary edge
@@ -65,6 +66,8 @@ SUBROUTINE get_normal_to_cell()
     fnormal_ind   = 0
     cell_node_ids = 0
     cell_data_ind = 0
+    geom_data     = zero
+    geom_data_ind = 0
     
     ! Compute the geometrical data for the cells (geom_data) and prepare the data
     ! for the second loop (edges)
@@ -107,6 +110,7 @@ SUBROUTINE get_normal_to_cell()
 &                      SQRT((xy(3,1)-xy(4,1))**2 + (xy(3,2)-xy(4,2))**2) + SQRT((xy(1,1)-xy(4,1))**2 + (xy(1,2)-xy(4,2))**2)
       END IF
       geom_data(i,3:4) = cell_data(i,1:2)
+      geom_data_ind(i,1:typec) = cell_data_ind(i,1:typec)
     END DO
     ! Save the x,y components of the normals in the matrix cell_data_n (module_shallow)
     cell_data_n(1:nbrElem,1:8) = cell_data(1:nbrElem,3:10)

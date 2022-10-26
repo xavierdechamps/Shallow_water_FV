@@ -22,7 +22,8 @@ MODULE module_shallow
     REAL(kr), ALLOCATABLE :: geom_data(:,:)   ! see get_normal_to_cell
     REAL(kr), ALLOCATABLE :: cell_data_n(:,:) ! see get_normal_to_cell
     REAL(kr), ALLOCATABLE :: BoundCond(:,:)   ! Imposed boundary conditions ( boundary_edge , hBC , uBC , vBC)
-    
+       
+    INTEGER(ki), ALLOCATABLE :: geom_data_ind(:,:)    ! see read_gmsh
     INTEGER(ki), ALLOCATABLE :: front(:,:)            ! see read_gmsh
     INTEGER(ki), ALLOCATABLE :: elem(:,:)             ! see read_gmsh
     INTEGER(ki), ALLOCATABLE :: nbr_nodes_per_elem(:) ! see read_gmsh
@@ -49,7 +50,7 @@ MODULE module_mem_allocate
 ! Subroutine mem_allocate
 ! -----------------------
   SUBROUTINE mem_allocate(node,front,elem,nbr_nodes_per_elem,U0,depth,BoundCond,dt,Source,&
-&                         edges,fnormal,geom_data,cell_data_n,edges_ind,fnormal_ind,&
+&                         edges,fnormal,geom_data,geom_data_ind,cell_data_n,edges_ind,fnormal_ind,&
 &                         lengU0,nbrNodes,nbrElem,nbrFront,nbrInt,only_mesh)
     USE module_shallow, only : kr,ki,nbvar
     IMPLICIT NONE
@@ -71,6 +72,7 @@ MODULE module_mem_allocate
     REAL(kr), ALLOCATABLE :: cell_data_n(:,:) 
     INTEGER(ki), ALLOCATABLE :: edges_ind(:,:)  
     INTEGER(ki), ALLOCATABLE :: fnormal_ind(:,:)
+    INTEGER(ki), ALLOCATABLE :: geom_data_ind(:,:) 
     
     INTEGER(ki), INTENT(IN) :: lengU0,nbrNodes,nbrElem,nbrFront,nbrInt,only_mesh
         
@@ -80,7 +82,7 @@ MODULE module_mem_allocate
 ! Subroutine mem_deallocate
 ! -------------------------
   SUBROUTINE mem_deallocate(node,front,elem,nbr_nodes_per_elem,U0,depth,BoundCond,dt,Source,&
-&                       edges,fnormal,geom_data,cell_data_n,edges_ind,fnormal_ind)
+&                       edges,fnormal,geom_data,geom_data_ind,cell_data_n,edges_ind,fnormal_ind)
     USE module_shallow, only : kr,ki
     IMPLICIT NONE
 
@@ -101,6 +103,7 @@ MODULE module_mem_allocate
     REAL(kr), ALLOCATABLE :: cell_data_n(:,:) 
     INTEGER(ki), ALLOCATABLE :: edges_ind(:,:)  
     INTEGER(ki), ALLOCATABLE :: fnormal_ind(:,:)
+    INTEGER(ki), ALLOCATABLE :: geom_data_ind(:,:) 
         
   END SUBROUTINE mem_deallocate
   

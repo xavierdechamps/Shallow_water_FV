@@ -32,7 +32,7 @@ PROGRAM BUILD_INITIAL_SOLUTION
     
     ! Allocate the memory for the arrays
     CALL mem_allocate(node,front,elem,nbr_nodes_per_elem,U0,depth,BoundCond,dt,Source,&
-&                     edges,fnormal,geom_data,cell_data_n,edges_ind,fnormal_ind,&
+&                     edges,fnormal,geom_data,geom_data_ind,cell_data_n,edges_ind,fnormal_ind,&
 &                     nbvar*nbrElem,nbrNodes,nbrElem,nbrFront,nbrInt,0)
 
     ! Read the mesh and the initial solution / boundary conditions
@@ -47,7 +47,7 @@ PROGRAM BUILD_INITIAL_SOLUTION
     
     ! Deallocate the memory for the arrays
     CALL mem_deallocate(node,front,elem,nbr_nodes_per_elem,U0,depth,BoundCond,dt,Source,&
-&                       edges,fnormal,geom_data,cell_data_n,edges_ind,fnormal_ind)
+&                       edges,fnormal,geom_data,geom_data_ind,cell_data_n,edges_ind,fnormal_ind)
     
 200 CONTINUE
     WRITE(*,*) "End of the program"
@@ -72,26 +72,21 @@ SUBROUTINE write_initial_condition_gmsh()
     formatreal = 'ES24.15E3'
 
     !************************************* INITIAL HEIGHT    
-    height_init = 0.0d00    
-    DO i=1,nbrElem
-      IF (elem(i,5).eq.22) THEN
-        height_init(i) = 0.0d0
-      ELSEIF (elem(i,5).eq.23) THEN
-        height_init(i) = 5.0d0
-      ENDIF
-    ENDDO
+    height_init = 1.0d00
     
     !************************************* INITIAL VELOCITY
-    velocity_init = 0.0d00
+    velocity_init(:,1) = 9.0d00
+    velocity_init(:,2) = 0.0d00
 
     !************************************* Bathymetric depth
     depth_init = 0.0d00
     
     !************************************* Boundary Condition - Height 
-    height_BC = 0.0d00
+    height_BC = height_init(1)
     
     !************************************* Boundary Condition - Velocity 
-    velocity_BC = 0.0d00
+    velocity_BC(:,1) = velocity_init(1,1)
+    velocity_BC(:,2) = 0.0d00
         
     !*************************************
     

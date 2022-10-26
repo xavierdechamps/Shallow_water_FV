@@ -43,10 +43,10 @@ PROGRAM MESH_INTERPOLATOR
     
     ! Allocate the memory for the arrays
     CALL mem_allocate(node,front,elem,nbr_nodes_per_elem,U0,depth,BoundCond,dt,Source,&
-&                     edges,fnormal,geom_data,cell_data_n,edges_ind,fnormal_ind,&
+&                     edges,fnormal,geom_data,geom_data_ind,cell_data_n,edges_ind,fnormal_ind,&
 &                     nbvar*nbrElem,nbrNodes,nbrElem,nbrFront,nbrInt,1)
     CALL mem_allocate(node_new,front_new,elem_new,nbr_nodes_per_elem_new,U0_new,depth_new,BoundCond_new,dt,Source,&
-&                     edges,fnormal,geom_data,cell_data_n,edges_ind,fnormal_ind, &
+&                     edges,fnormal,geom_data,geom_data_ind,cell_data_n,edges_ind,fnormal_ind, &
 &                     nbvar*nbrElem_new,nbrNodes_new,nbrElem_new,nbrFront_new,nbrInt_new,1)
 
     ! Read the mesh and the initial solution / boundary conditions
@@ -131,9 +131,9 @@ PROGRAM MESH_INTERPOLATOR
     
     ! Deallocate the memory for the arrays
     CALL mem_deallocate(node,front,elem,nbr_nodes_per_elem,U0,depth,BoundCond,dt,Source,&
-&                       edges,fnormal,geom_data,cell_data_n,edges_ind,fnormal_ind)
+&                       edges,fnormal,geom_data,geom_data_ind,cell_data_n,edges_ind,fnormal_ind)
     CALL mem_deallocate(node_new,front_new,elem_new,nbr_nodes_per_elem_new,U0_new,depth_new,BoundCond_new,dt,Source,&
-&                       edges,fnormal,geom_data,cell_data_n,edges_ind,fnormal_ind)
+&                       edges,fnormal,geom_data,geom_data_ind,cell_data_n,edges_ind,fnormal_ind)
     
 200 CONTINUE
     WRITE(*,*) "End of the program"

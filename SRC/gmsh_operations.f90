@@ -475,14 +475,14 @@ SUBROUTINE read_gmsh(U0,lengU0,mesh_file,lengch,node,elem,nbr_nodes_per_elem,fro
     
     istep = 7
     
-    dataname = "Height_inlet"
+    dataname = "Height_boundary"
     DO WHILE (line .NE. "$ElementData")
       READ(10,*,END=90) line
     END DO
     DO i=1,2
       READ(10,*,END=90) line
     ENDDO
-    IF (TRIM(line) .NE. 'Height_inlet') GO TO 90
+    IF (TRIM(line) .NE. trim(dataname)) GO TO 90
     DO i=1,5
       READ(10,*,END=90) line
     ENDDO
@@ -502,14 +502,14 @@ SUBROUTINE read_gmsh(U0,lengU0,mesh_file,lengch,node,elem,nbr_nodes_per_elem,fro
     
     istep = 8
     
-    dataname = "Velocity_inlet"
+    dataname = "Velocity_boundary"
     DO WHILE (line .NE. "$ElementData")
       READ(10,*,END=90) line
     END DO
     DO i=1,2
       READ(10,*,END=90) line
     ENDDO
-    IF (TRIM(line) .NE. 'Velocity_inlet') GO TO 90
+    IF (TRIM(line) .NE. trim(dataname)) GO TO 90
     DO i=1,5
       READ(10,*,END=90) line
     ENDDO

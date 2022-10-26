@@ -134,9 +134,9 @@ SUBROUTINE runge_kutta
        
        ! Print relative errors, useful for steady flows
        error(i,1) = i
-       error(i,2) = SQRT(SUM((Uc(1:nbvar*nbrElem:nbvar)-U0(1:nbvar*nbrElem:nbvar))**2))/nbrElem
-       error(i,3) = SQRT(SUM((Uc(2:nbvar*nbrElem:nbvar)-U0(2:nbvar*nbrElem:nbvar))**2))/nbrElem
-       error(i,4) = SQRT(SUM((Uc(3:nbvar*nbrElem:nbvar)-U0(3:nbvar*nbrElem:nbvar))**2))/nbrElem
+       error(i,2) = SQRT(SUM((Uc(1:nbvar*nbrElem:nbvar)-U0(1:nbvar*nbrElem:nbvar))**2))/SQRT(SUM((U0(1:nbvar*nbrElem:nbvar))**2))
+       error(i,3) = SQRT(SUM((Uc(2:nbvar*nbrElem:nbvar)-U0(2:nbvar*nbrElem:nbvar))**2))/SQRT(SUM((U0(2:nbvar*nbrElem:nbvar))**2))
+       error(i,4) = SQRT(SUM((Uc(3:nbvar*nbrElem:nbvar)-U0(3:nbvar*nbrElem:nbvar))**2))/SQRT(SUM((U0(3:nbvar*nbrElem:nbvar))**2))
        WRITE(char,'(F6.6)') error(i,2)
        char = TRIM(ADJUSTL(char))
        IF (char=="NaN") THEN
