@@ -60,17 +60,17 @@ SUBROUTINE runge_kutta
     CHARACTER ( LEN = 255 ) :: data_filename = 'gnuplot_data.txt'
     CHARACTER ( LEN = 255 ) :: command_filename = 'gnuplot_commands.txt'
     
+    ! DAM
+    ! REAL(kr), DIMENSION(4) :: dam_points_ref
+    ! INTEGER(ki) :: ierr
+    ! OPEN(UNIT=105,FILE="dam_points_ref",STATUS="replace",IOSTAT=ierr,FORM='formatted')
+
 #ifdef WITHSIGWATCH
     statussignal = Watch_signal(2)  ! INT
     statussignal = Watch_signal(15) ! KILL
 #endif
     kill=.false.
     
-    ! DAM
-!    REAL(kr), DIMENSION(4) :: dam_points_ref
-!    INTEGER(ki) :: ierr
-!    OPEN(UNIT=105,FILE="dam_points_ref",STATUS="replace",IOSTAT=ierr,FORM='formatted')
-
     CALL sampletime(time_begin)
 
 !    alpha = (/0.5,0.5,1./)
@@ -122,15 +122,15 @@ SUBROUTINE runge_kutta
        
        ! DAM
        ! Dam Point 1 [100m] - 1534 1535 1564 1565 
-!       dam_points_ref(1) = 0.25d00*(Uc(1534*nbvar-2) + Uc(1535*nbvar-2) + Uc(1564*nbvar-2) + Uc(1565*nbvar-2))
+      ! dam_points_ref(1) = 0.25d00*(Uc(1534*nbvar-2) + Uc(1535*nbvar-2) + Uc(1564*nbvar-2) + Uc(1565*nbvar-2))
        ! Dam Point 2 [110m] - 2566 2567 2604 2605
-!       dam_points_ref(2) = 0.25d00*(Uc(2566*nbvar-2) + Uc(2567*nbvar-2) + Uc(2604*nbvar-2) + Uc(2605*nbvar-2))
+      ! dam_points_ref(2) = 0.25d00*(Uc(2566*nbvar-2) + Uc(2567*nbvar-2) + Uc(2604*nbvar-2) + Uc(2605*nbvar-2))
        ! Dam Point 3 [130m] - 2558 2559 2596 2597
-!       dam_points_ref(3) = 0.25d00*(Uc(2558*nbvar-2) + Uc(2559*nbvar-2) + Uc(2596*nbvar-2) + Uc(2597*nbvar-2))
+      ! dam_points_ref(3) = 0.25d00*(Uc(2558*nbvar-2) + Uc(2559*nbvar-2) + Uc(2596*nbvar-2) + Uc(2597*nbvar-2))
        ! Dam Point 4 [130m] - 2550 2551 2588 2589
-!       dam_points_ref(4) = 0.25d00*(Uc(2550*nbvar-2) + Uc(2551*nbvar-2) + Uc(2588*nbvar-2) + Uc(2589*nbvar-2))
+      ! dam_points_ref(4) = 0.25d00*(Uc(2550*nbvar-2) + Uc(2551*nbvar-2) + Uc(2588*nbvar-2) + Uc(2589*nbvar-2))
      
-!       write(105,'(I9,5ES25.16E3)') i,i*deltaTfixed,dam_points_ref(1:4)
+      ! write(105,'(I9,5ES25.16E3)') i,i*deltaTfixed,dam_points_ref(1:4)
        
        ! Print relative errors, useful for steady flows
        error(i,1) = i
@@ -196,7 +196,7 @@ SUBROUTINE runge_kutta
     END DO
 
     ! DAM
-!    CLOSE(UNIT=105)
+   ! CLOSE(UNIT=105)
 
     CALL sampletime(time_end)
     CALL time_display

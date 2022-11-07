@@ -18,16 +18,41 @@ SUBROUTINE flux(Hvec,Source_sf, Q)
     REAL(kr), DIMENSION(1:nbvar,1:2) :: FL, FR
     REAL(kr), DIMENSION(1:nbvar*nbrElem) :: gradX, gradY
     REAL(kr), DIMENSION(1:2) :: n
-    REAL(kr) :: ds, SL, SR, h, u, v, c, Froude, dij, Hi, Hj, Xij, Yij
-    INTEGER(ki) :: i, j, idL, idR, error,chunck
+    REAL(kr) :: ds, SL, SR, h, u, v, c, Froude, dij, Hi, Hj, Xij, Yij, tmpmax, tmp, tmp2, globmax
+    INTEGER(ki) :: i, j, idL, idR, error,chunck, IDj, IDk
     LOGICAL  :: iswall
     
     Hvec = zero
     Source_sf = zero
     iswall = .FALSE.
     
-    CALL getGradients(Q,gradX,gradY)
-    CALL applyTVD_Gradients(gradX,gradY)
+    IF (muscl .NE. 0) THEN
+      CALL getGradients(Q,gradX,gradY)
+      CALL applyTVD_Gradients(gradX,gradY)
+      
+      shock_indicator = zero
+      globmax = zero
+      DO i=1,nbrInt
+        idL = edges_ind(i,1)
+        idR = edges_ind(i,2)
+        n(1:2) = edges(i,1:2)            ! x,y components of the external normal to the edge
+        ds = SQRT(n(1)*n(1) + n(2)*n(2)) ! length of the edge
+        n = n/ds                         ! normalize the normal
+        
+        IDk = (idL-1)*nbvar + 1  
+        tmp = gradX(IDk)*n(1) + gradY(IDk)*n(2)
+        IDk = (idR-1)*nbvar + 1  
+        tmp2 = gradX(IDk)*n(1) + gradY(IDk)*n(2)
+        tmpmax = MAX(tmp,tmp2)
+        
+        IF (ABS(tmpmax).LT.1.E-12) tmpmax = 1.E-12
+        shock_indicator(idL) = ABS(tmpmax)
+        shock_indicator(idR) = ABS(tmpmax)
+        globmax = MAX(globmax,ABS(tmpmax))
+      ENDDO
+      shock_indicator = shock_indicator / globmax
+      
+    ENDIF
     
     ! Loop on the internal edges
 !$OMP PARALLEL &
@@ -51,10 +76,13 @@ SUBROUTINE flux(Hvec,Source_sf, Q)
        qL = Q(idL*nbvar-2:idL*nbvar) ! solution h, hu, hv inside element idL
        qR = Q(idR*nbvar-2:idR*nbvar) ! solution h, hu, hv inside element idR
        
-       DO j=1,nbvar
-         qL(j) = qL(j) + 0.5d00 * ( gradX((idL-1)*nbvar+j)*Xij + gradY((idL-1)*nbvar+j)*Yij )
-         qR(j) = qR(j) - 0.5d00 * ( gradX((idR-1)*nbvar+j)*Xij + gradY((idR-1)*nbvar+j)*Yij )
-       ENDDO
+       ! Reconstruct the solution at the edge to reach a 2nd order precision
+       IF (muscl .NE. 0) THEN
+         DO j=1,nbvar
+           qL(j) = qL(j) + 0.5d00 * ( gradX((idL-1)*nbvar+j)*Xij + gradY((idL-1)*nbvar+j)*Yij )
+           qR(j) = qR(j) - 0.5d00 * ( gradX((idR-1)*nbvar+j)*Xij + gradY((idR-1)*nbvar+j)*Yij )
+         ENDDO
+       ENDIF
        
        IF (ABS(qL(1))<eps) qL(1)=eps
        IF (ABS(qR(1))<eps) qR(1)=eps
@@ -183,6 +211,16 @@ SUBROUTINE flux(Hvec,Source_sf, Q)
           CASE DEFAULT
              WRITE(*,*) "Error : unrecognized boundary condition ",fnormal_ind(i,3)
        END SELECT
+       
+       IF (muscl .NE. 0) THEN
+         ! Retrieve qu and qv to reconstruct the solution with MUSCL
+         qL(2:3) = qL(2:3)*qL(1)
+         ! Reconstruct the solution at the edge to reach a 2nd order precision
+         DO j=1,nbvar
+           qL(j) = qL(j) + 0.5d00 * ( gradX((idL-1)*nbvar+j)*Xij + gradY((idL-1)*nbvar+j)*Yij )
+         ENDDO
+         qL(2:3) = qL(2:3)/qL(1)
+       ENDIF
        
        CALL getFlux(qL,FL) ! Get the local flux for the cell left of the edge
        CALL getFlux(qR,FR) ! Get the local flux for the ghost cell

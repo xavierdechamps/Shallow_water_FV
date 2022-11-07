@@ -12,6 +12,7 @@ dam_ref_sol.dat                              : name of the restart file, dat for
 9.81                          : g : the gravity constant
 0.0                           : Manning roughness coefficient (bed)
 0.0                           : Manning roughness coefficient (wall)
+1                             : [1] MUSCL activated or [0] deactivated
 0                             : [1] steady or [0] unsteady flow
 2.4                           : CFL number (used only for steady flows)
 0.01                          : time step [s] (used only for unsteady flows)

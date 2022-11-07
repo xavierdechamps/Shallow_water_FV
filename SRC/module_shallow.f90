@@ -35,9 +35,8 @@ MODULE module_shallow
     
     INTEGER(ki) :: nbrNodes, nbrElem, nbrTris, nbrQuads, nbrFront, nbrInt, nbrBC
     INTEGER(ki) :: nTime, shownTime, savenTime
-    INTEGER(ki) :: time_begin, time_end, steady, restart
+    INTEGER(ki) :: time_begin, time_end, steady, restart, muscl
     INTEGER(ki), DIMENSION(2,5) :: CLTable
-    
     
     REAL(kr)  :: CFL, ggrav, deltaTfixed, eps, manning_b, manning_w
     
