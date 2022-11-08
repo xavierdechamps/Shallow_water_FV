@@ -7,7 +7,6 @@ set ( CMAKE_BUILD_TYPE Release)
 
 set(CMAKE_TRY_COMPILE_TARGET_TYPE "STATIC_LIBRARY")
 
-
 project(Shallow
 LANGUAGES Fortran
 VERSION 1.0
@@ -54,7 +53,7 @@ get_filename_component (SRC_dir ${SRC_file} PATH )
 # Construction of the executables ###########################################
 add_library ( libmodules
 				      ${SRC_dir}/module_shallow.f90
-)
+            )
 
 #
 add_executable ( shallow 
@@ -68,12 +67,12 @@ add_executable ( shallow
 				      ${SRC_dir}/runge_kutta.f90
 				      ${SRC_dir}/handling_parameters.f90
 				      ${SRC_dir}/mem_allocate.f90
+				      ${SRC_dir}/adaptive_mesh_refinement.f90
                 )
 if ( Have_Gnuplot )
   target_sources( shallow PUBLIC ${SRC_dir}/gnufor.f90 )
 endif()
 add_dependencies( shallow libmodules)
-
 set_target_properties ( shallow PROPERTIES LINKER_LANGUAGE Fortran)
 
 #
@@ -83,7 +82,7 @@ add_executable ( build_initial_solution
 				      ${SRC_dir}/find_elem.f90
 				      ${SRC_dir}/mem_allocate.f90
 				      ${SRC_dir}/handling_parameters.f90
-			)
+			    )
 add_dependencies( build_initial_solution libmodules)
 set_target_properties ( build_initial_solution PROPERTIES LINKER_LANGUAGE Fortran)
 
@@ -94,7 +93,7 @@ add_executable ( get_relative_error_theory
 				      ${SRC_dir}/find_elem.f90
 				      ${SRC_dir}/mem_allocate.f90
 				      ${SRC_dir}/handling_parameters.f90
-			)
+			    )
 add_dependencies( get_relative_error_theory libmodules)
 set_target_properties ( get_relative_error_theory PROPERTIES LINKER_LANGUAGE Fortran)
 
@@ -104,7 +103,7 @@ add_executable ( mesh_interpolator
 				      ${SRC_dir}/gmsh_operations.f90
 				      ${SRC_dir}/find_elem.f90
 				      ${SRC_dir}/mem_allocate.f90
-			)
+			    )
 add_dependencies( mesh_interpolator libmodules)
 set_target_properties ( mesh_interpolator PROPERTIES LINKER_LANGUAGE Fortran)
 

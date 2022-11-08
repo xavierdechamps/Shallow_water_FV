@@ -84,7 +84,7 @@ END SUBROUTINE read_solution
 !##########################################################
 SUBROUTINE write_gmsh(U0,lengU0,file_gmsh,lengch,node,elem,front,nbrNodes,nbrElem,nbrTris,nbrQuads,&
 &                     nbrFront,nbr_nodes_per_elem,k,count)
-    USE MODULE_SHALLOW, only : kr,ki,ggrav,nbvar,eps
+    USE MODULE_SHALLOW, only : kr,ki,ggrav,nbvar,eps,shock_indicator,amr
     IMPLICIT NONE
 
     ! Subroutine parameters
@@ -185,6 +185,21 @@ SUBROUTINE write_gmsh(U0,lengU0,file_gmsh,lengch,node,elem,front,nbrNodes,nbrEle
     WRITE(10,'(T1,'//numdig//','//formatreal//')') (i+nbrFront, Froude(i),i=1,nbrElem)
     WRITE(10,'(T1,A15)') "$EndElementData"
     
+    !*************************************
+    ! Write the shock detector
+    IF (amr.NE.0) THEN
+        WRITE(10,'(T1,A12)') "$ElementData"
+        WRITE(10,'(T1,A1)') "1"
+        WRITE(10,'(T1,A11)') '"indicator"'
+        WRITE(10,'(T1,A1)') "1"
+        WRITE(10,'(T1,'//numdig//')') k
+        WRITE(10,'(T1,A1)') "3"
+        WRITE(10,'(T1,'//numdig//')') count
+        WRITE(10,'(T1,A1)') "1"
+        WRITE(10,'(T1,'//numdig//')') nbrElem
+        WRITE(10,'(T1,'//numdig//','//formatreal//')') (i+nbrFront, shock_indicator(i),i=1,nbrElem)
+        WRITE(10,'(T1,A15)') "$EndElementData"
+    ENDIF
     !*************************************
     CLOSE(UNIT=10)
 

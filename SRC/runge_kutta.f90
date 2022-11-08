@@ -47,7 +47,7 @@ SUBROUTINE runge_kutta
     ! Local parameters
     INTEGER(ki) :: i, k, count, ok
     INTEGER(ki) :: statussignal
-    REAL(kr), DIMENSION(nbvar*nbrElem) :: Urk, Uc, H
+    REAL(kr), DIMENSION(1:nbvar*nbrElem) :: Urk, Uc, H, gradX, gradY
 !    REAL(kr), DIMENSION(4) :: beta
 !    REAL(kr), DIMENSION(3) :: alpha
     REAL(kr), ALLOCATABLE  :: error(:,:)
@@ -81,6 +81,15 @@ SUBROUTINE runge_kutta
     
     WRITE(*,*) "Begin of time integration"
     
+    IF (muscl.NE.0 .OR. amr.NE.0) THEN
+      CALL getGradients(U0,gradX,gradY)
+      CALL applyTVD_Gradients(gradX,gradY)
+    ENDIF
+    
+    IF (amr.NE.0) THEN
+      CALL get_relative_indicator_amr(gradX,gradY)
+    ENDIF
+    
     ! Write the initial solution
     CALL write_gmsh(U0,nbvar*nbrElem,file_gmsh,length_names,node,elem,front,nbrNodes,nbrElem,nbrTris,nbrQuads,&
 &                   nbrFront,nbr_nodes_per_elem,0,0)
@@ -113,11 +122,11 @@ SUBROUTINE runge_kutta
 !       END DO
 
       ! The Runge-Kutta method in itself
-       CALL flux(H,Source,U0)
+       CALL flux(H,Source,U0,gradX,gradY)
        Urk = U0 + dt*(Source-H)
-       CALL flux(H,Source,Urk)
+       CALL flux(H,Source,Urk,gradX,gradY)
        Urk = 0.75d00*U0 + 0.25d00*(Urk + dt*(Source-H))
-       CALL flux(H,Source,Urk)
+       CALL flux(H,Source,Urk,gradX,gradY)
        Uc  = U0/3.0d00 + 2.0d00/3.0d00 * ( Urk + dt*(Source-H) )
        
        ! DAM
@@ -178,6 +187,15 @@ SUBROUTINE runge_kutta
        U0 = Uc
        Uc = zero
        
+       IF (muscl.NE.0) THEN
+         CALL getGradients(U0,gradX,gradY)
+         CALL applyTVD_Gradients(gradX,gradY)
+       ENDIF
+       
+       IF (amr.NE.0) THEN
+         CALL get_relative_indicator_amr(gradX,gradY)
+       ENDIF
+       
 #ifdef WITHSIGWATCH
        statussignal = Get_last_signal()
        IF (statussignal.eq.2 .or. statussignal.eq.15)   THEN
@@ -206,6 +224,125 @@ SUBROUTINE runge_kutta
     IF (ALLOCATED(error)) DEALLOCATE( error )
 
 END SUBROUTINE runge_kutta
+
+
+SUBROUTINE getGradients(q,gradX,gradY)
+    USE module_shallow
+    USE OMP_LIB
+    IMPLICIT NONE
+    
+    ! Subroutine parameters
+    REAL(kr), DIMENSION(1:nbvar*nbrElem), INTENT(IN) :: q
+    REAL(kr), DIMENSION(1:nbvar*nbrElem), INTENT(OUT) :: gradX, gradY
+
+    ! Local parameters
+    INTEGER(ki) :: i,j,k,IDj
+    REAL(kr)    :: Ixx,Iyy,Ixy,D
+    REAL(kr), DIMENSION(nbvar) :: Jx,Jy
+    
+    gradX = zero 
+    gradY = zero
+    
+!$OMP PARALLEL &
+!$OMP& default (shared) &
+!$OMP& private (Ixx,Iyy,Ixy,Jx,Jy,D,j,k,IDj) 
+!$OMP DO
+    DO i=1,nbrElem
+      Ixx = zero
+      Iyy = zero
+      Ixy = zero
+      Jx  = zero
+      Jy  = zero
+      DO j=1,nbr_nodes_per_elem(i)
+        IDj = geom_data_ind(i,j)
+        IF (IDj.EQ.0) CYCLE
+        Ixx = Ixx + (geom_data(IDj,3)-geom_data(i,3))*(geom_data(IDj,3)-geom_data(i,3))
+        Iyy = Iyy + (geom_data(IDj,4)-geom_data(i,4))*(geom_data(IDj,4)-geom_data(i,4))
+        Ixy = Ixy + (geom_data(IDj,3)-geom_data(i,3))*(geom_data(IDj,4)-geom_data(i,4))
+        DO k=1,nbvar
+          Jx(k) = Jx(k) + (geom_data(IDj,3)-geom_data(i,3))*(q((IDj-1)*nbvar+k)-q((i-1)*nbvar+k))
+          Jy(k) = Jy(k) + (geom_data(IDj,4)-geom_data(i,4))*(q((IDj-1)*nbvar+k)-q((i-1)*nbvar+k))
+        ENDDO
+      ENDDO
+      
+      D   = Ixx*Iyy - Ixy*Ixy
+      DO k=1,nbvar
+        gradX((i-1)*nbvar+k) = (Jx(k)*Iyy - Jy(k)*Ixy)/D
+        gradY((i-1)*nbvar+k) = (Jy(k)*Ixx - Jx(k)*Ixy)/D
+      ENDDO
+      
+    ENDDO
+!$OMP END DO
+!$OMP END PARALLEL
+
+END SUBROUTINE getGradients
+
+SUBROUTINE applyTVD_Gradients(gradX,gradY)
+    USE module_shallow
+    USE OMP_LIB
+    IMPLICIT NONE
+    
+    ! Subroutine parameters
+    REAL(kr), DIMENSION(1:nbvar*nbrElem), INTENT(INOUT) :: gradX, gradY
+
+    ! Local parameters
+    INTEGER(ki) :: i,j,k,IDj,IDk
+    REAL(kr), DIMENSION(1:nbvar*nbrElem) :: gradXlim, gradYlim, signX, signY
+    REAL(kr), DIMENSION(1:nbvar)    :: minVx, minVy, minSVx, minSVy, maxSVx, maxSVy
+    
+    signX = gradX
+    signY = gradY
+    
+    WHERE (signX>zero)
+       signX = 1.d00
+    ELSEWHERE (signX<zero)
+       signX = -1.d00
+    END WHERE
+    
+    WHERE (signY>zero)
+       signY = 1.d00
+    ELSEWHERE (signY<zero)
+       signY = -1.d00
+    END WHERE
+    
+!$OMP PARALLEL &
+!$OMP& default (shared) &
+!$OMP& private (minVx,minVy,minSVx,minSVy,maxSVx,maxSVy,j,IDj,k,IDk) 
+!$OMP DO
+    DO i=1,nbrElem
+      minVx  = 1.E16
+      minVy  = 1.E16
+      minSVx = 1.E16
+      minSVy = 1.E16
+      maxSVx = zero
+      maxSVy = zero
+      
+      DO j=1,nbr_nodes_per_elem(i)
+        IDj = geom_data_ind(i,j)
+        DO k=1,nbvar
+          IDk = (IDj-1)*nbvar+k
+          minVx(k) = min( minVx(k) , abs(gradX( IDk ) ) )
+          minVy(k) = min( minVy(k) , abs(gradY( IDk ) ) )
+          minSVx(k)= min( minSVx(k), signX( IDk ) )
+          minSVy(k)= min( minSVy(k), signY( IDk ) )
+          maxSVx(k)= max( maxSVx(k), signX( IDk ) )
+          maxSVy(k)= max( maxSVy(k), signY( IDk ) )
+        ENDDO
+      ENDDO
+      
+      DO k=1,nbvar
+        gradXlim((i-1)*nbvar+k) = 0.5d00 * ( minSVx(k) + maxSVx(k) ) * minVx(k)
+        gradYlim((i-1)*nbvar+k) = 0.5d00 * ( minSVy(k) + maxSVy(k) ) * minVy(k)
+      ENDDO
+      
+    ENDDO
+!$OMP END DO
+!$OMP END PARALLEL
+    
+    gradX = gradXlim
+    gradY = gradYlim
+    
+END SUBROUTINE applyTVD_Gradients
 
 !##########################################################
 ! SUBROUTINE sampletime

@@ -45,6 +45,7 @@ SUBROUTINE read_parameters(file_name,ok)
     READ(20,iostat=ierr,err=8,fmt='(ES15.7E3,a100)')  manning_b,tmp
     READ(20,iostat=ierr,err=8,fmt='(ES15.7E3,a100)')  manning_w,tmp
     READ(20,iostat=ierr,err=8,fmt='(I9,a100)')        muscl,tmp
+    READ(20,iostat=ierr,err=8,fmt='(I9,a100)')        amr,tmp
     READ(20,iostat=ierr,err=8,fmt='(I9,a100)')        steady,tmp
     READ(20,iostat=ierr,err=8,fmt='(ES15.7E3,a100)')  CFL,tmp
     READ(20,iostat=ierr,err=8,fmt='(ES15.7E3,a100)')  deltaTfixed,tmp
@@ -96,6 +97,7 @@ SUBROUTINE print_correct_parameters()
     WRITE(*,'(a4,26x,a)')  "REAL",": n : Manning roughness coefficient (bed)"
     WRITE(*,'(a4,26x,a)')  "REAL",": n : Manning roughness coefficient (wall)"
     WRITE(*,'(a7,23x,a)')  "INTEGER",": [1] MUSCL activated or [0] deactivated"
+    WRITE(*,'(a7,23x,a)')  "INTEGER",": [1] Automatic mesh refinement activated or [0] deactivated"
     WRITE(*,'(a7,23x,a)')  "INTEGER",": [1] steady or [0] unsteady flow"
     WRITE(*,'(a4,26x,a)')  "REAL",": CFL number (used only for steady flows)"
     WRITE(*,'(a4,26x,a)')  "REAL",": time step [s] (used only for unsteady flows)"
@@ -136,6 +138,7 @@ SUBROUTINE print_parameters(file_name)
     WRITE(*,'(ES15.7E3,25x,a)') manning_b,": n : Manning roughness coefficient (bed)"
     WRITE(*,'(ES15.7E3,25x,a)') manning_w,": n : Manning roughness coefficient (wall)"
     WRITE(*,'(i9,31x,a)')       muscl,": [1] MUSCL activated or [0] deactivated"
+    WRITE(*,'(i9,31x,a)')       amr,": [1] Automatic mesh refinement activated or [0] deactivated"
     WRITE(*,'(i9,31x,a)')       steady,": [1] steady or [0] unsteady flow"
     WRITE(*,'(ES15.7E3,25x,a)') CFL,": CFL number (used only for steady flows)"
     WRITE(*,'(ES15.7E3,25x,a)') deltaTfixed,": time step [s] (used only for unsteady flows)"

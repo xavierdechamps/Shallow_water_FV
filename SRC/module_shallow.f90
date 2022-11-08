@@ -22,7 +22,8 @@ MODULE module_shallow
     REAL(kr), ALLOCATABLE :: geom_data(:,:)   ! see get_normal_to_cell
     REAL(kr), ALLOCATABLE :: cell_data_n(:,:) ! see get_normal_to_cell
     REAL(kr), ALLOCATABLE :: BoundCond(:,:)   ! Imposed boundary conditions ( boundary_edge , hBC , uBC , vBC)
-       
+    REAL(kr), ALLOCATABLE :: shock_indicator(:) ! Relative indicator for automatic mesh refinement
+    
     INTEGER(ki), ALLOCATABLE :: geom_data_ind(:,:)    ! see read_gmsh
     INTEGER(ki), ALLOCATABLE :: front(:,:)            ! see read_gmsh
     INTEGER(ki), ALLOCATABLE :: elem(:,:)             ! see read_gmsh
@@ -35,7 +36,7 @@ MODULE module_shallow
     
     INTEGER(ki) :: nbrNodes, nbrElem, nbrTris, nbrQuads, nbrFront, nbrInt, nbrBC
     INTEGER(ki) :: nTime, shownTime, savenTime
-    INTEGER(ki) :: time_begin, time_end, steady, restart, muscl
+    INTEGER(ki) :: time_begin, time_end, steady, restart, muscl, amr
     INTEGER(ki), DIMENSION(2,5) :: CLTable
     
     REAL(kr)  :: CFL, ggrav, deltaTfixed, eps, manning_b, manning_w
@@ -50,8 +51,8 @@ MODULE module_mem_allocate
 ! -----------------------
   SUBROUTINE mem_allocate(node,front,elem,nbr_nodes_per_elem,U0,depth,BoundCond,dt,Source,&
 &                         edges,fnormal,geom_data,geom_data_ind,cell_data_n,edges_ind,fnormal_ind,&
-&                         lengU0,nbrNodes,nbrElem,nbrFront,nbrInt,only_mesh)
-    USE module_shallow, only : kr,ki,nbvar
+&                         shock_indicator,lengU0,nbrNodes,nbrElem,nbrFront,nbrInt,only_mesh)
+    USE module_shallow, only : kr,ki,nbvar,amr
     IMPLICIT NONE
 
     REAL(kr), ALLOCATABLE    :: U0(:)
@@ -64,6 +65,8 @@ MODULE module_mem_allocate
     
     REAL(kr), ALLOCATABLE :: Source(:)
     REAL(kr), ALLOCATABLE :: dt(:)
+    
+    REAL(kr), ALLOCATABLE :: shock_indicator(:)
     
     REAL(kr), ALLOCATABLE :: edges(:,:)       
     REAL(kr), ALLOCATABLE :: fnormal(:,:)     
@@ -81,7 +84,8 @@ MODULE module_mem_allocate
 ! Subroutine mem_deallocate
 ! -------------------------
   SUBROUTINE mem_deallocate(node,front,elem,nbr_nodes_per_elem,U0,depth,BoundCond,dt,Source,&
-&                       edges,fnormal,geom_data,geom_data_ind,cell_data_n,edges_ind,fnormal_ind)
+&                       edges,fnormal,geom_data,geom_data_ind,cell_data_n,edges_ind,fnormal_ind,&
+&                       shock_indicator)
     USE module_shallow, only : kr,ki
     IMPLICIT NONE
 
@@ -95,6 +99,8 @@ MODULE module_mem_allocate
     
     REAL(kr), ALLOCATABLE :: Source(:)
     REAL(kr), ALLOCATABLE :: dt(:)
+    
+    REAL(kr), ALLOCATABLE :: shock_indicator(:)
     
     REAL(kr), ALLOCATABLE :: edges(:,:)       
     REAL(kr), ALLOCATABLE :: fnormal(:,:)     

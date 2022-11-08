@@ -10,7 +10,7 @@ PROGRAM MAIN
     INTEGER(ki) :: ok, i, j
     REAL(kr)    :: h, incidence, normeU, u, v, hgauche, hdroite
     REAL(kr)    :: hinit, uinit, vinit
-    CHARACTER(LEN=100)::param_file
+    CHARACTER(LEN=100)::param_file 
     
     ! Get the number of arguments
     IF(COMMAND_ARGUMENT_COUNT().NE.1)THEN
@@ -38,7 +38,7 @@ PROGRAM MAIN
     ! Allocate the memory for the arrays
     CALL mem_allocate(node,front,elem,nbr_nodes_per_elem,U0,depth,BoundCond,dt,Source,&
 &                     edges,fnormal,geom_data,geom_data_ind,cell_data_n,edges_ind,fnormal_ind,&
-&                     nbvar*nbrElem,nbrNodes,nbrElem,nbrFront,nbrInt,0)
+&                     shock_indicator,nbvar*nbrElem,nbrNodes,nbrElem,nbrFront,nbrInt,0)
     
     ! Read the mesh and the initial solution / boundary conditions
     CALL read_gmsh(U0,nbvar*nbrElem,mesh_file,length_names,node,elem,nbr_nodes_per_elem,front,&
@@ -66,7 +66,8 @@ PROGRAM MAIN
     
     ! Deallocate the memory for the arrays
     CALL mem_deallocate(node,front,elem,nbr_nodes_per_elem,U0,depth,BoundCond,dt,Source,&
-&                       edges,fnormal,geom_data,geom_data_ind,cell_data_n,edges_ind,fnormal_ind)
+&                       edges,fnormal,geom_data,geom_data_ind,cell_data_n,edges_ind,fnormal_ind,&
+&                       shock_indicator)
     
 200 CONTINUE
     WRITE(*,*) "End of the simulation"

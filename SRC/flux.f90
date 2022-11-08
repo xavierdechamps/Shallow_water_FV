@@ -2,57 +2,27 @@
 ! SUBROUTINE flux
 !  Goal: compute the global flux defined by the finite volume method
 !##########################################################
-SUBROUTINE flux(Hvec,Source_sf, Q)
+SUBROUTINE flux(Hvec, Source_sf, Q, gradX, gradY)
     USE module_shallow
     USE OMP_LIB
     IMPLICIT NONE
 
     ! Subroutine parameters
-    REAL(kr), DIMENSION(1:nbvar*nbrElem), INTENT(IN) :: Q
-    REAL(kr), DIMENSION(1:nbvar*nbrElem), INTENT(OUT) :: Hvec
-    REAL(kr), DIMENSION(1:nbvar*nbrElem), INTENT(OUT) :: Source_sf
+    REAL(kr), DIMENSION(1:nbvar*nbrElem), INTENT(IN) :: Q, gradX, gradY
+    REAL(kr), DIMENSION(1:nbvar*nbrElem), INTENT(OUT) :: Hvec, Source_sf
 
     ! Local parameters
     REAL(kr), DIMENSION(1:nbvar) :: temp
     REAL(kr), DIMENSION(1:nbvar) :: qL, qR, Fav, Fup, qAv, sourceloc_f, sourceloc_s
     REAL(kr), DIMENSION(1:nbvar,1:2) :: FL, FR
-    REAL(kr), DIMENSION(1:nbvar*nbrElem) :: gradX, gradY
     REAL(kr), DIMENSION(1:2) :: n
-    REAL(kr) :: ds, SL, SR, h, u, v, c, Froude, dij, Hi, Hj, Xij, Yij, tmpmax, tmp, tmp2, globmax
-    INTEGER(ki) :: i, j, idL, idR, error,chunck, IDj, IDk
+    REAL(kr) :: ds, SL, SR, h, u, v, c, Froude, dij, Hi, Hj, Xij, Yij
+    INTEGER(ki) :: i, j, idL, idR, error,chunck
     LOGICAL  :: iswall
     
     Hvec = zero
     Source_sf = zero
     iswall = .FALSE.
-    
-    IF (muscl .NE. 0) THEN
-      CALL getGradients(Q,gradX,gradY)
-      CALL applyTVD_Gradients(gradX,gradY)
-      
-      shock_indicator = zero
-      globmax = zero
-      DO i=1,nbrInt
-        idL = edges_ind(i,1)
-        idR = edges_ind(i,2)
-        n(1:2) = edges(i,1:2)            ! x,y components of the external normal to the edge
-        ds = SQRT(n(1)*n(1) + n(2)*n(2)) ! length of the edge
-        n = n/ds                         ! normalize the normal
-        
-        IDk = (idL-1)*nbvar + 1  
-        tmp = gradX(IDk)*n(1) + gradY(IDk)*n(2)
-        IDk = (idR-1)*nbvar + 1  
-        tmp2 = gradX(IDk)*n(1) + gradY(IDk)*n(2)
-        tmpmax = MAX(tmp,tmp2)
-        
-        IF (ABS(tmpmax).LT.1.E-12) tmpmax = 1.E-12
-        shock_indicator(idL) = ABS(tmpmax)
-        shock_indicator(idR) = ABS(tmpmax)
-        globmax = MAX(globmax,ABS(tmpmax))
-      ENDDO
-      shock_indicator = shock_indicator / globmax
-      
-    ENDIF
     
     ! Loop on the internal edges
 !$OMP PARALLEL &
@@ -413,121 +383,3 @@ SUBROUTINE upwind_term(q,Qmat,sourceMat,n)
     sourceMat  = MATMUL(X,temp2)
     
 END SUBROUTINE upwind_term
-
-SUBROUTINE getGradients(q,gradX,gradY)
-    USE module_shallow
-    USE OMP_LIB
-    IMPLICIT NONE
-    
-    ! Subroutine parameters
-    REAL(kr), DIMENSION(1:nbvar*nbrElem), INTENT(IN) :: q
-    REAL(kr), DIMENSION(1:nbvar*nbrElem), INTENT(OUT) :: gradX, gradY
-
-    ! Local parameters
-    INTEGER(ki) :: i,j,k,IDj
-    REAL(kr)    :: Ixx,Iyy,Ixy,D
-    REAL(kr), DIMENSION(nbvar) :: Jx,Jy
-    
-    gradX = zero 
-    gradY = zero
-    
-!$OMP PARALLEL &
-!$OMP& default (shared) &
-!$OMP& private (Ixx,Iyy,Ixy,Jx,Jy,D,j,k,IDj) 
-!$OMP DO
-    DO i=1,nbrElem
-      Ixx = zero
-      Iyy = zero
-      Ixy = zero
-      Jx  = zero
-      Jy  = zero
-      DO j=1,nbr_nodes_per_elem(i)
-        IDj = geom_data_ind(i,j)
-        IF (IDj.EQ.0) CYCLE
-        Ixx = Ixx + (geom_data(IDj,3)-geom_data(i,3))*(geom_data(IDj,3)-geom_data(i,3))
-        Iyy = Iyy + (geom_data(IDj,4)-geom_data(i,4))*(geom_data(IDj,4)-geom_data(i,4))
-        Ixy = Ixy + (geom_data(IDj,3)-geom_data(i,3))*(geom_data(IDj,4)-geom_data(i,4))
-        DO k=1,nbvar
-          Jx(k) = Jx(k) + (geom_data(IDj,3)-geom_data(i,3))*(q((IDj-1)*nbvar+k)-q((i-1)*nbvar+k))
-          Jy(k) = Jy(k) + (geom_data(IDj,4)-geom_data(i,4))*(q((IDj-1)*nbvar+k)-q((i-1)*nbvar+k))
-        ENDDO
-      ENDDO
-      
-      D   = Ixx*Iyy - Ixy*Ixy
-      DO k=1,nbvar
-        gradX((i-1)*nbvar+k) = (Jx(k)*Iyy - Jy(k)*Ixy)/D
-        gradY((i-1)*nbvar+k) = (Jy(k)*Ixx - Jx(k)*Ixy)/D
-      ENDDO
-      
-    ENDDO
-!$OMP END DO
-!$OMP END PARALLEL
-
-END SUBROUTINE getGradients
-
-SUBROUTINE applyTVD_Gradients(gradX,gradY)
-    USE module_shallow
-    USE OMP_LIB
-    IMPLICIT NONE
-    
-    ! Subroutine parameters
-    REAL(kr), DIMENSION(1:nbvar*nbrElem), INTENT(INOUT) :: gradX, gradY
-
-    ! Local parameters
-    INTEGER(ki) :: i,j,k,IDj,IDk
-    REAL(kr), DIMENSION(1:nbvar*nbrElem) :: gradXlim, gradYlim, signX, signY
-    REAL(kr), DIMENSION(1:nbvar)    :: minVx, minVy, minSVx, minSVy, maxSVx, maxSVy
-    
-    signX = gradX
-    signY = gradY
-    
-    WHERE (signX>zero)
-       signX = 1.d00
-    ELSEWHERE (signX<zero)
-       signX = -1.d00
-    END WHERE
-    
-    WHERE (signY>zero)
-       signY = 1.d00
-    ELSEWHERE (signY<zero)
-       signY = -1.d00
-    END WHERE
-    
-!$OMP PARALLEL &
-!$OMP& default (shared) &
-!$OMP& private (minVx,minVy,minSVx,minSVy,maxSVx,maxSVy,j,IDj,k,IDk) 
-!$OMP DO
-    DO i=1,nbrElem
-      minVx  = 1.E16
-      minVy  = 1.E16
-      minSVx = 1.E16
-      minSVy = 1.E16
-      maxSVx = zero
-      maxSVy = zero
-      
-      DO j=1,nbr_nodes_per_elem(i)
-        IDj = geom_data_ind(i,j)
-        DO k=1,nbvar
-          IDk = (IDj-1)*nbvar+k
-          minVx(k) = min( minVx(k) , abs(gradX( IDk ) ) )
-          minVy(k) = min( minVy(k) , abs(gradY( IDk ) ) )
-          minSVx(k)= min( minSVx(k), signX( IDk ) )
-          minSVy(k)= min( minSVy(k), signY( IDk ) )
-          maxSVx(k)= max( maxSVx(k), signX( IDk ) )
-          maxSVy(k)= max( maxSVy(k), signY( IDk ) )
-        ENDDO
-      ENDDO
-      
-      DO k=1,nbvar
-        gradXlim((i-1)*nbvar+k) = 0.5d00 * ( minSVx(k) + maxSVx(k) ) * minVx(k)
-        gradYlim((i-1)*nbvar+k) = 0.5d00 * ( minSVy(k) + maxSVy(k) ) * minVy(k)
-      ENDDO
-      
-    ENDDO
-!$OMP END DO
-!$OMP END PARALLEL
-    
-    gradX = gradXlim
-    gradY = gradYlim
-    
-END SUBROUTINE applyTVD_Gradients
