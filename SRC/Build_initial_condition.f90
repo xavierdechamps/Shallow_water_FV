@@ -66,28 +66,59 @@ SUBROUTINE write_initial_condition_gmsh()
     REAL(kr) :: height_init(nbrElem),depth_init(nbrElem)
     REAL(kr) :: velocity_init(nbrElem,2)
     REAL(kr) :: height_BC(nbrFront),velocity_BC(nbrFront,2)
-            
+    REAL(kr) :: Q, Fr_i, h_i, u_i, g, yMax, xMin, xMax, hleft, slope, xe
+    
     CALL get_number_digits_integer(nbrNodes,numdigits)
     WRITE(numdig,'(A,I1)') 'I',numdigits+1
 
     formatreal = 'ES24.15E3'
 
     !************************************* INITIAL HEIGHT    
-    height_init = 1.0d00
+    ! Q0 = 2.5 or 5. L/s
+    Q    = 5.0d0 / 1000.0d0
+    Fr_i = 4.d0
+    g    = 9.81d0
+    yMax = maxval(node(:,2) )
+    h_i  = ( Q*Q / (yMax*yMax*Fr_i*Fr_i*g) )**(1.d0/3.d0)
     
+    height_init = h_i
+        
     !************************************* INITIAL VELOCITY
-    velocity_init(:,1) = 9.0d00
+    u_i = Q / ( yMax * h_i )
+    velocity_init(:,1) = u_i
     velocity_init(:,2) = 0.0d00
 
     !************************************* Bathymetric depth
-    depth_init = 0.0d00
+    ! Linear slope
+    xMax = maxval(node(:,1) )
+    xMin = minval(node(:,1) )
+    hleft = 0.0d0
+    slope = 0.015d0 ! = Dy / Dx
+            
+    DO i=1,nbrElem
+      xe =  (node(elem(i,1),1)+node(elem(i,2),1)+node(elem(i,3),1) ) /3.d0
+      
+      ! Linear slope
+      depth_init(i) = hleft - slope*(xe-xMin)
+    ENDDO
     
     !************************************* Boundary Condition - Height 
-    height_BC = height_init(1)
+    height_BC = zero
+    DO i=1,nbrFront
+        IF ( front(i,3).eq.1 .or.front(i,3).eq.2) THEN
+        ! Inlet 
+            height_BC(i) = h_i
+        ENDIF
+    END DO
     
     !************************************* Boundary Condition - Velocity 
-    velocity_BC(:,1) = velocity_init(1,1)
-    velocity_BC(:,2) = 0.0d00
+    velocity_BC = zero
+    DO i=1,nbrFront
+        IF ( front(i,3).eq.1) THEN
+        ! Inlet 
+            velocity_BC(i,1) = u_i
+        ENDIF
+    END DO
         
     !*************************************
     

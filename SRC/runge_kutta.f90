@@ -87,7 +87,8 @@ SUBROUTINE runge_kutta
     ENDIF
     
     IF (amr.NE.0) THEN
-      CALL get_relative_indicator_amr(gradX,gradY)
+      CALL amr_get_relative_indicator(gradX,gradY)
+      CALL amr_split_cells()
     ENDIF
     
     ! Write the initial solution
@@ -193,7 +194,7 @@ SUBROUTINE runge_kutta
        ENDIF
        
        IF (amr.NE.0) THEN
-         CALL get_relative_indicator_amr(gradX,gradY)
+         CALL amr_get_relative_indicator(gradX,gradY)
        ENDIF
        
 #ifdef WITHSIGWATCH
