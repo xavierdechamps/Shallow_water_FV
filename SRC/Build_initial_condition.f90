@@ -65,28 +65,50 @@ SUBROUTINE write_initial_condition_gmsh()
     REAL(kr) :: height_init(nbrElem),depth_init(nbrElem)
     REAL(kr) :: velocity_init(nbrElem,2)
     REAL(kr) :: height_BC(nbrFront),velocity_BC(nbrFront,2)
-            
+    REAL(kr) :: Q, Fr_i, h_i, u_i, g, yMax, xMin, xMax, hleft, slope, xe
+    
     CALL get_number_digits_integer(nbrNodes,numdigits)
     WRITE(numdig,'(A,I1)') 'I',numdigits+1
 
     formatreal = 'ES24.15E3'
 
     !************************************* INITIAL HEIGHT    
-    height_init = 1.0d00
+    height_init = 0.0d00    
+    DO i=1,nbrElem
+      IF (elem(i,5).eq.1) THEN
+        height_init(i)     = 1.d0
+        velocity_init(i,1) = 10.0d00
+        velocity_init(i,2) = 0.0d00
+        depth_init(i)      = 0.0d00
+      ELSEIF (elem(i,5).eq.2) THEN
+        height_init(i)     = 1.d0
+        velocity_init(i,1) = 10.0d00
+        velocity_init(i,2) = 10.0d00
+        depth_init(i)      = 0.0d00
+      ELSEIF (elem(i,5).eq.3) THEN
+        height_init(i)     = 1.d0
+        velocity_init(i,1) = 0.0d00
+        velocity_init(i,2) = 10.0d00
+        depth_init(i)      = 0.0d00
+      ELSEIF (elem(i,5).eq.4) THEN
+        height_init(i)     = 10.d0
+        velocity_init(i,1) = 0.0d00
+        velocity_init(i,2) = 0.0d00
+        depth_init(i)      = 0.0d00
+      ENDIF
+    ENDDO
     
     !************************************* INITIAL VELOCITY
-    velocity_init(:,1) = 9.0d00
-    velocity_init(:,2) = 0.0d00
+!    velocity_init = 0.0d00
 
     !************************************* Bathymetric depth
-    depth_init = 0.0d00
+!    depth_init = 0.0d00
     
     !************************************* Boundary Condition - Height 
-    height_BC = height_init(1)
+    height_BC = 0.0d00
     
     !************************************* Boundary Condition - Velocity 
-    velocity_BC(:,1) = velocity_init(1,1)
-    velocity_BC(:,2) = 0.0d00
+    velocity_BC = 0.0d00
         
     !*************************************
     

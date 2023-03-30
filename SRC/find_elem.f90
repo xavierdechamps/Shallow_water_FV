@@ -124,13 +124,13 @@ END SUBROUTINE find_vector
 ! SUBROUTINE find_mat
 !  Goal: find an index inside a 2D array
 !##########################################################
-SUBROUTINE find_mat(mat,element,ind,pos)
+SUBROUTINE find_mat(mat,sizemat,element,ind,pos)
     USE module_shallow
     IMPLICIT NONE
 
     ! Subroutine parameters
-    INTEGER(ki), DIMENSION(4*nbrElem,2), INTENT(IN) :: mat
-    INTEGER(ki), INTENT(IN) :: element
+    INTEGER(ki), INTENT(IN) :: element,sizemat
+    INTEGER(ki), INTENT(IN) :: mat(sizemat,2)
     INTEGER(ki), INTENT(OUT) :: ind
     INTEGER(ki), DIMENSION(4), INTENT(OUT) :: pos
     
@@ -140,7 +140,7 @@ SUBROUTINE find_mat(mat,element,ind,pos)
     ind = 0 ! number of times that element appears in mat
     pos = (/0,0,0,0/)
 
-    DO i=1,4*nbrElem
+    DO i=1,sizemat
        IF ((mat(i,1).eq.element).or.(mat(i,2).eq.element)) THEN
           ind = ind + 1
           pos(ind) = i
@@ -149,3 +149,33 @@ SUBROUTINE find_mat(mat,element,ind,pos)
     END DO
 
 END SUBROUTINE find_mat
+
+!##########################################################
+! SUBROUTINE find_mat
+!  Goal: find a line inside a 2D array that have 2 input values
+!##########################################################
+SUBROUTINE find_mat2(mat,sizemat,ele1,ele2,ind)
+    USE module_shallow
+    IMPLICIT NONE
+
+    ! Subroutine parameters
+    INTEGER(ki), INTENT(IN) :: ele1,ele2,sizemat
+    INTEGER(ki), INTENT(IN) :: mat(sizemat,2)
+    INTEGER(ki), INTENT(OUT) :: ind
+    
+    ! Local parameters
+    INTEGER(ki) :: i
+    
+    ind = 0 ! line of matrix with the two values
+    
+    ! ind = count( ((mat(:,1)==ele1) .or. (mat(:,2)==ele1)) .and. ((mat(:,1)==ele2) .or. (mat(:,2)==ele2)) )
+    
+    DO i=1,sizemat
+       IF (((mat(i,1).eq.ele1).or.(mat(i,2).eq.ele1)) .and. ((mat(i,1).eq.ele2).or.(mat(i,2).eq.ele2)) ) THEN
+          ind = i
+          EXIT
+       END IF
+       IF ((mat(i,1).eq.0).or.(mat(i,2).eq.0)) EXIT
+    END DO
+
+END SUBROUTINE find_mat2

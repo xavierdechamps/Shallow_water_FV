@@ -30,27 +30,27 @@ SUBROUTINE flux(Hvec,Source_sf, Q)
       CALL getGradients(Q,gradX,gradY)
       CALL applyTVD_Gradients(gradX,gradY)
       
-      shock_indicator = zero
-      globmax = zero
-      DO i=1,nbrInt
-        idL = edges_ind(i,1)
-        idR = edges_ind(i,2)
-        n(1:2) = edges(i,1:2)            ! x,y components of the external normal to the edge
-        ds = SQRT(n(1)*n(1) + n(2)*n(2)) ! length of the edge
-        n = n/ds                         ! normalize the normal
+      ! shock_indicator = zero
+      ! globmax = zero
+      ! DO i=1,nbrInt
+        ! idL = edges_ind(i,1)
+        ! idR = edges_ind(i,2)
+        ! n(1:2) = edges(i,1:2)            ! x,y components of the external normal to the edge
+        ! ds = SQRT(n(1)*n(1) + n(2)*n(2)) ! length of the edge
+        ! n = n/ds                         ! normalize the normal
         
-        IDk = (idL-1)*nbvar + 1  
-        tmp = gradX(IDk)*n(1) + gradY(IDk)*n(2)
-        IDk = (idR-1)*nbvar + 1  
-        tmp2 = gradX(IDk)*n(1) + gradY(IDk)*n(2)
-        tmpmax = MAX(tmp,tmp2)
+        ! IDk = (idL-1)*nbvar + 1  
+        ! tmp = gradX(IDk)*n(1) + gradY(IDk)*n(2)
+        ! IDk = (idR-1)*nbvar + 1  
+        ! tmp2 = gradX(IDk)*n(1) + gradY(IDk)*n(2)
+        ! tmpmax = MAX(tmp,tmp2)
         
-        IF (ABS(tmpmax).LT.1.E-12) tmpmax = 1.E-12
-        shock_indicator(idL) = ABS(tmpmax)
-        shock_indicator(idR) = ABS(tmpmax)
-        globmax = MAX(globmax,ABS(tmpmax))
-      ENDDO
-      shock_indicator = shock_indicator / globmax
+        ! IF (ABS(tmpmax).LT.1.E-12) tmpmax = 1.E-12
+        ! shock_indicator(idL) = ABS(tmpmax)
+        ! shock_indicator(idR) = ABS(tmpmax)
+        ! globmax = MAX(globmax,ABS(tmpmax))
+      ! ENDDO
+      ! shock_indicator = shock_indicator / globmax
       
     ENDIF
     
